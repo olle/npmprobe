@@ -18,7 +18,35 @@ packages.
 ```
 
 Probing may take a while and the results are output to the console, so that the
-user can take further actions.
+user can take further actions. The found compromised package and version is
+displayed in the output. For example (not actual compromised package):
+
+```sh
+> npmprobe % ./npmprobe.sh compromised.txt
+[FOUND] etag@1.8.1 in the following package.json files:
+	/home/me/Development/Contargo/barge/barge-dispo/docs/node_modules/vite/package.json:
+	/home/me/Development/Contargo/barge/barge-dispo/docs/node_modules/vitepress/node_modules/vite/package.json:
+	/home/me/Development/Contargo/barge/barge-dispo/docs/vitepress/node_modules/vite/package.json:
+	/home/me/Development/Contargo/barge/barge-dispo/node_modules/express/package.json:
+	/home/me/Development/Contargo/barge/barge-dispo/node_modules/send/package.json:
+	/home/me/Development/Contargo/barge/barge-dispo/node_modules/vite/package.json:
+	/home/me/Development/Contargo/lib/amqp-support/node_modules/vite/package.json:
+	/home/me/Development/Contargo/main-run/main-run-order-storage/node_modules/vite/package.json:
+	/home/me/Development/Contargo/mdm/mdm-backend/frontend/node_modules/vite/package.json:
+	/home/me/Development/Contargo/rail/rail-dispo/docs/node_modules/vite/package.json:
+	/home/me/Development/Contargo/rail/rail-dispo/node_modules/express/package.json:
+	/home/me/Development/Contargo/rail/rail-dispo/node_modules/send/package.json:
+	/home/me/Development/Contargo/rail/rail-dispo/src/railrunner/node_modules/vite/package.json:
+	/home/me/Development/Contargo/star/star/node_modules/vite/package.json:
+	/home/me/Development/OpenSource/query-response-spring-amqp/node_modules/vite/package.json:
+	/home/me/Development/OpenSource/query-response-spring-amqp/ui-frontend/node_modules/vite/package.json:
+	/home/me/Development/OpenSource/spring-boot-vue-vite-mpa/node_modules/vite/package.json:
+	/home/me/Development/OpenSource/spring-boot-vue-vite-mpa/src/main/vue/apps/one/node_modules/vite/package.json:
+	/home/me/Development/synyx/camp2025/11ty/node_modules/send/package.json:
+	/home/me/Development/synyx/slydes/node_modules/jiti/package.json:
+	/home/me/Development/synyx/slydes/node_modules/vite/package.json:
+	/home/me/Development/synyx/synorg/node_modules/vite/package.json:
+```
 
 ## Adding new packages
 
