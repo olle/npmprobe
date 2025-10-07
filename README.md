@@ -30,18 +30,6 @@ displayed in the output. For example (not actual compromised package):
 	/home/me/Development/project/node_modules/express/package.json:
 	/home/me/Development/project/node_modules/send/package.json:
 	/home/me/Development/project/node_modules/vite/package.json:
-	/home/me/Development/lib/amqp-support/node_modules/vite/package.json:
-	/home/me/Development/mr/mr-order-storage/node_modules/vite/package.json:
-	/home/me/Development/md/backend/frontend/node_modules/vite/package.json:
-	/home/me/Development/other/docs/node_modules/vite/package.json:
-	/home/me/Development/other/node_modules/express/package.json:
-	/home/me/Development/other/node_modules/send/package.json:
-	/home/me/Development/other/src/rr/node_modules/vite/package.json:
-	/home/me/Development/str/str/node_modules/vite/package.json:
-	/home/me/Development/OpenSource/query-response-spring-amqp/node_modules/vite/package.json:
-	/home/me/Development/OpenSource/query-response-spring-amqp/ui-frontend/node_modules/vite/package.json:
-	/home/me/Development/OpenSource/spring-boot-vue-vite-mpa/node_modules/vite/package.json:
-	/home/me/Development/OpenSource/spring-boot-vue-vite-mpa/src/main/vue/apps/one/node_modules/vite/package.json:
 ```
 
 ## Adding new packages
