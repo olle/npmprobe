@@ -387,6 +387,7 @@ eslint-config-crowdstrike-node@4.0.4
 eslint-config-crowdstrike@11.0.2
 eslint-config-crowdstrike@11.0.3
 eslint-config-teselagen@6.1.7
+expr-eval@2.0.2
 globalize-rpk@1.7.4
 graphql-sequelize-teselagen@5.3.8
 has-ansi@6.0.1
