@@ -1,5 +1,4 @@
 @accordproject/concerto-analysis 3.24.1
-@microsoft/api-extractor 7.53.3
 @accordproject/concerto-linter 3.24.1
 @accordproject/concerto-linter-default-ruleset 3.24.1
 @accordproject/concerto-metamodel 3.12.5
