@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/olle/npmprobe/internal/mdfind"
@@ -48,14 +47,23 @@ func FindPackageInFiles(fm FileMap, pkgName, version string) []string {
 	versionStr := fmt.Sprintf(`%s"`, version)
 
 	for path, content := range fm {
-		// Only search in package.json or package-lock.json files
-		base := filepath.Base(path)
-		if base != "package.json" && base != "package-lock.json" {
-			continue
-		}
 
-		// Check if both package name and version appear in the file
-		if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
+		found := false
+// Check if both package name and version appear in the file
+               if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
+
+				   // Check each line for both package name and version
+				   for _, line := range strings.Split(content, "\n") {
+					   if strings.Contains(line, searchStr) && strings.Contains(line, versionStr) {
+						   found = true
+						   break
+					   }
+				   }
+
+
+			   }
+
+		if found {
 			matches = append(matches, path)
 		}
 	}
