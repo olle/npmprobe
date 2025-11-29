@@ -2,9 +2,7 @@ NPM Probe
 =========
 
 A Go tool that does an exhaustive check for compromised installed `npm` packages
-from an authored list. Uses `mdfind` to efficiently locate and search `package.json`
-and `package-lock.json` files across the system.
-
+from an authored list. Uses `mdfind` or `mlocate` to efficiently locate and search `package.json` and `package-lock.json` files across the system.
 
 
 ## Building
@@ -20,6 +18,18 @@ This produces binaries in the `bin/` directory:
 - `npmprobe-linux-x86_64` — Linux (x86_64)
 - `npmprobe-windows-x86_64.exe` — Windows (x86_64)
 
+### Testing on Linux with Docker
+
+Build and test the Linux binary in a Docker container:
+
+```sh
+docker build -t npmprobe:test .
+docker run npmprobe:test
+```
+
+The Dockerfile builds the npmprobe binary and runs it against the `compromised.txt` file
+on a Linux Alpine system with the `locate` database pre-populated.
+
 ## Makefile Targets
 
 - `make all` — builds binaries, normalizes the `compromised.txt` list, and runs a
@@ -27,6 +37,7 @@ This produces binaries in the `bin/` directory:
 - `make build` — cross-compiles binaries for macOS, Linux, and Windows.
 - `make fmt` — formats all Go source files using `go fmt`.
 - `make prepare-list` — normalizes `compromised.txt` (sorts and removes duplicates).
+- `make docker-test` — builds and runs the Docker test image on Linux.
 
 ## Quickstart
 
