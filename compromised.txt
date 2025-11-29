@@ -1291,6 +1291,7 @@ poper-react-sdk 0.1.2
 posthog-docusaurus 2.0.6
 posthog-js 1.297.3
 posthog-node 4.18.1
+posthog-node 5.11.3
 posthog-node 5.13.3
 posthog-plugin-hello-world 1.0.1
 posthog-react-native 4.11.1
