@@ -23,7 +23,7 @@ This produces binaries in the `bin/` directory:
 Probe for all packages and versions in the `compromised.txt` file:
 
 ```sh
-./bin/npmprobe-darwin-aarch64 < compromised.txt
+./bin/npmprobe-darwin-aarch64 -v < compromised.txt
 [OK]   @operato/help@9.0.36 not present in any files
 [OK]   @operato/help@9.0.37 not present in any files
 [OK]   @operato/help@9.0.38 not present in any files
@@ -41,6 +41,14 @@ it displays the matching files:
 	/Users/me/Development/project/node_modules/vite/package.json
 	/Users/me/Development/project/node_modules/send/package.json
 ```
+
+### Flags
+
+- `-v`: verbose. When set, the tool prints packages that were not found in any
+  scanned `package.json`/`package-lock.json` files (lines prefixed with
+  `[OK]`). By default (without `-v`) only found matches (`[FOUND]`) are
+  printed.
+
 
 ## Adding new packages
 
