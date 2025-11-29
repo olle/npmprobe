@@ -5,6 +5,8 @@ A Go tool that does an exhaustive check for compromised installed `npm` packages
 from an authored list. Uses `mdfind` to efficiently locate and search `package.json`
 and `package-lock.json` files across the system.
 
+
+
 ## Building
 
 Build cross-platform binaries for macOS, Linux, and Windows:
@@ -17,6 +19,14 @@ This produces binaries in the `bin/` directory:
 - `npmprobe-darwin-aarch64` — macOS (Apple Silicon)
 - `npmprobe-linux-x86_64` — Linux (x86_64)
 - `npmprobe-windows-x86_64.exe` — Windows (x86_64)
+
+## Makefile Targets
+
+- `make all` — builds binaries, normalizes the `compromised.txt` list, and runs a
+  verbose probe against the current system.
+- `make build` — cross-compiles binaries for macOS, Linux, and Windows.
+- `make fmt` — formats all Go source files using `go fmt`.
+- `make prepare-list` — normalizes `compromised.txt` (sorts and removes duplicates).
 
 ## Quickstart
 
