@@ -67,7 +67,7 @@ func main() {
 
 		if !found && *verbose {
 
-				fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+			fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
 
 		}
 	}

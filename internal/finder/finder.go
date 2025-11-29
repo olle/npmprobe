@@ -49,19 +49,18 @@ func FindPackageInFiles(fm FileMap, pkgName, version string) []string {
 	for path, content := range fm {
 
 		found := false
-// Check if both package name and version appear in the file
-               if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
+		// Check if both package name and version appear in the file
+		if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
 
-				   // Check each line for both package name and version
-				   for _, line := range strings.Split(content, "\n") {
-					   if strings.Contains(line, searchStr) && strings.Contains(line, versionStr) {
-						   found = true
-						   break
-					   }
-				   }
+			// Check each line for both package name and version
+			for _, line := range strings.Split(content, "\n") {
+				if strings.Contains(line, searchStr) && strings.Contains(line, versionStr) {
+					found = true
+					break
+				}
+			}
 
-
-			   }
+		}
 
 		if found {
 			matches = append(matches, path)
