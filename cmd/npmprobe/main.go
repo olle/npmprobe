@@ -24,7 +24,9 @@ func main() {
 	result := 0
 
 	// Initialize the file map from mdfind results (errors will panic)
+	fmt.Fprintf(os.Stderr, "Initializing file map from mdfind results...\n")
 	fileMap := finder.LoadPackageFiles()
+	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", len(fileMap))
 
 	// Read package list from input
 	input := os.Stdin
@@ -37,7 +39,10 @@ func main() {
 		input = f
 	}
 
+	fmt.Fprintf(os.Stderr, "Scanning packages...\n")
 	scanner := bufio.NewScanner(input)
+	packageCount := 0
+	foundCount := 0
 	for scanner.Scan() {
 		pkg := strings.TrimSpace(scanner.Text())
 		if pkg == "" {
@@ -50,8 +55,10 @@ func main() {
 			continue
 		}
 
+		packageCount++
 		pkgName := parts[0]
 		version := parts[1]
+
 		found := false
 
 		// Search in loaded files
@@ -62,18 +69,25 @@ func main() {
 				fmt.Printf("\t%s\n", path)
 			}
 			found = true
+			foundCount++
 			result = 1
 		}
 
 		if !found && *verbose {
-
 			fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
-
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error reading input: %v\n", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Scanned %d packages\n", packageCount)
+
+	if result == 0 {
+		fmt.Fprintf(os.Stderr, "No findings, ok\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "Found %d compromised packages\n", foundCount)
 	}
 
 	os.Exit(result)
