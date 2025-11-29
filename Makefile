@@ -1,3 +1,7 @@
+.PHONY: all
+all: build prepare-list
+	./bin/npmprobe -v compromised.txt
+
 ##
 ## Normalize list of compromised packages by sorting and removing
 ## duplicate entries. Use this target before updating the repository.
@@ -13,7 +17,7 @@ prepare-list:
 ## Outputs to bin/ directory with platform-specific names.
 ##
 .PHONY: build
-build:
+build: fmt
 	@mkdir -p bin
 	@echo "Building npmprobe for multiple platforms..."
 	GOOS=darwin GOARCH=arm64 go build -o bin/npmprobe ./cmd/npmprobe
@@ -22,3 +26,10 @@ build:
 	GOOS=windows GOARCH=amd64 go build -o bin/npmprobe-windows-x86_64.exe ./cmd/npmprobe
 	@echo "Build complete. Binaries in bin/"
 	@ls -lh bin/npmprobe-*
+
+##
+## Format all Go source files.
+##
+.PHONY: fmt
+fmt:
+	go fmt ./...
