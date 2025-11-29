@@ -33,3 +33,13 @@ build: fmt
 .PHONY: fmt
 fmt:
 	go fmt ./...
+
+##
+## Build and run the Docker test image (Linux)
+##
+.PHONY: docker-test
+docker-test:
+	@echo "Building Docker image 'npmprobe:test'..."
+	docker build -t npmprobe:test .
+	@echo "Running Docker image 'npmprobe:test'..."
+	docker run --rm npmprobe:test
