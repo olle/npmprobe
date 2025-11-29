@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	// Verbose: show packages that are not found in any files
+	verbose := flag.Bool("v", false, "show packages not found in any files")
 	flag.Parse()
 
 	inputFile := "-"
@@ -21,11 +23,8 @@ func main() {
 
 	result := 0
 
-	// Initialize the file map from mdfind results
-	fileMap, err := finder.LoadPackageFiles()
-	if err != nil {
-		log.Fatalf("Error loading package files: %v\n", err)
-	}
+	// Initialize the file map from mdfind results (errors will panic)
+	fileMap := finder.LoadPackageFiles()
 
 	// Read package list from input
 	input := os.Stdin
@@ -45,8 +44,8 @@ func main() {
 			continue
 		}
 
-		// Parse package@version
-		parts := strings.Split(pkg, "@")
+		// Parse 'package@version'
+		parts := strings.Split(pkg, " ")
 		if len(parts) < 2 {
 			continue
 		}
@@ -66,8 +65,10 @@ func main() {
 			result = 1
 		}
 
-		if !found {
-			fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+		if !found && *verbose {
+
+				fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+
 		}
 	}
 

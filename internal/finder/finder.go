@@ -14,15 +14,13 @@ import (
 type FileMap map[string]string
 
 // LoadPackageFiles loads all package.json and package-lock.json files into memory
-func LoadPackageFiles() (FileMap, error) {
+// This function panics on any underlying mdfind error; unreadable files are skipped.
+func LoadPackageFiles() FileMap {
 	fm := make(FileMap)
 
 	// Query for package.json and package-lock.json files
 	query := `kMDItemFSName == "package.json" || kMDItemFSName == "package-lock.json"`
-	files, err := mdfind.FindFiles(query)
-	if err != nil {
-		return nil, fmt.Errorf("mdfind failed: %w", err)
-	}
+	files := mdfind.FindFiles(query)
 
 	// Read each file into the map
 	for _, path := range files {
@@ -40,7 +38,7 @@ func LoadPackageFiles() (FileMap, error) {
 		fm[path] = string(content)
 	}
 
-	return fm, nil
+	return fm
 }
 
 // FindPackageInFiles searches for a package@version in the loaded file map
