@@ -41,28 +41,44 @@ func LoadPackageFiles() FileMap {
 	return fm
 }
 
-// FindPackageInFiles searches for a package@version in the loaded file map
 // FindPackageInFiles searches for a package (represented by a parser.Matcher)
-// in the loaded file map and returns paths where the package@version appears.
+// in the loaded file map and returns paths where the package and any of its versions appear.
 func FindPackageInFiles(fm FileMap, m parser.Matcher) []string {
 	var matches []string
 	searchStr := fmt.Sprintf(`"%s":`, m.Name())
-	versionStr := fmt.Sprintf(`%s"`, m.Version())
+
+	// Get all versions to check
+	versions := m.Versions()
+	if len(versions) == 0 {
+		panic("Matcher has no versions")
+	}
 
 	for path, content := range fm {
-
 		found := false
-		// Check if both package name and version appear in the file
-		if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
 
-			// Check each line for both package name and version
-			for _, line := range strings.Split(content, "\n") {
-				if strings.Contains(line, searchStr) && strings.Contains(line, versionStr) {
+		// Check if package name appears in the file
+		if !strings.Contains(content, searchStr) {
+			continue
+		}
+
+		// Check each line for package name and any of the versions
+		for _, line := range strings.Split(content, "\n") {
+			if !strings.Contains(line, searchStr) {
+				continue
+			}
+
+			// Check if any of the versions appear in this line
+			for _, version := range versions {
+				versionStr := fmt.Sprintf(`%s"`, version)
+				if strings.Contains(line, versionStr) {
 					found = true
 					break
 				}
 			}
 
+			if found {
+				break
+			}
 		}
 
 		if found {
