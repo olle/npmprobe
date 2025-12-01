@@ -37,9 +37,16 @@ build: fmt
 ##
 ## Format all Go source files.
 ##
-.PHONY: fmt
-fmt:
+.PHONY: format fmt
+format fmt:
 	go fmt ./...
+
+##
+## Run all tests to verify the codebase.
+##
+.PHONY: verify v
+verify v:
+	go test ./...
 
 ##
 ## Build and run the Docker test image (Linux)
