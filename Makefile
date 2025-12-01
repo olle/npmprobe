@@ -1,3 +1,10 @@
+ifeq ($(shell command -v podman 2> /dev/null),)
+    CNTR := docker
+else
+    CNTR := podman
+endif
+
+
 .PHONY: all
 all: build prepare-list
 	./bin/npmprobe -v compromised.txt
@@ -40,6 +47,6 @@ fmt:
 .PHONY: docker-test
 docker-test:
 	@echo "Building Docker image 'npmprobe:test'..."
-	docker build -t npmprobe:test .
+	${CNTR} build -t npmprobe:test .
 	@echo "Running Docker image 'npmprobe:test'..."
-	docker run --rm npmprobe:test
+	${CNTR} run --rm npmprobe:test
