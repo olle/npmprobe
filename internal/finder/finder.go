@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/olle/npmprobe/internal/mdfind"
+	"github.com/olle/npmprobe/internal/parser"
 )
 
 // FileMap holds file paths and their contents indexed by filepath
@@ -41,10 +42,12 @@ func LoadPackageFiles() FileMap {
 }
 
 // FindPackageInFiles searches for a package@version in the loaded file map
-func FindPackageInFiles(fm FileMap, pkgName, version string) []string {
+// FindPackageInFiles searches for a package (represented by a parser.Matcher)
+// in the loaded file map and returns paths where the package@version appears.
+func FindPackageInFiles(fm FileMap, m parser.Matcher) []string {
 	var matches []string
-	searchStr := fmt.Sprintf(`"%s":`, pkgName)
-	versionStr := fmt.Sprintf(`%s"`, version)
+	searchStr := fmt.Sprintf(`"%s":`, m.Name())
+	versionStr := fmt.Sprintf(`%s"`, m.Version())
 
 	for path, content := range fm {
 

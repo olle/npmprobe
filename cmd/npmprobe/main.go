@@ -85,8 +85,8 @@ func main() {
 		version := matcher.Version()
 		found := false
 
-		// Search for the package in the file map
-		matches := finder.FindPackageInFiles(fileMap, pkgName, version)
+		// Search for the package in the file map using the matcher
+		matches := finder.FindPackageInFiles(fileMap, matcher)
 		if len(matches) > 0 {
 
 			fmt.Printf("[FOUND] %s@%s in the following package files:\n", pkgName, version)
@@ -131,7 +131,7 @@ func main() {
 		log.Fatalf("Error reading input: %v\n", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Scanned %d packages\n", packageCount)
+	fmt.Fprintf(os.Stderr, "Completed scanning for %d compromised packages\n", packageCount)
 
 	if result == 0 {
 		fmt.Fprintf(os.Stderr, "No findings, ok\n")
