@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/olle/npmprobe/internal/finder"
+	"github.com/olle/npmprobe/internal/parser"
 )
 
 func main() {
@@ -72,20 +73,22 @@ func main() {
 	lastPercent := -1
 
 	for i, pkg := range packages {
-		parts := strings.Split(pkg, " ")
-		if len(parts) < 2 {
-			continue
+
+		// Parse package and version into a matcher
+		matcher, err := parser.ParseLine(pkg)
+		if err != nil {
+			panic(fmt.Sprintf("Error parsing package line '%s': %v", pkg, err))
 		}
 
 		packageCount++
-		pkgName := parts[0]
-		version := parts[1]
-
+		pkgName := matcher.Name()
+		version := matcher.Version()
 		found := false
 
-		// Search in loaded files
+		// Search for the package in the file map
 		matches := finder.FindPackageInFiles(fileMap, pkgName, version)
 		if len(matches) > 0 {
+
 			fmt.Printf("[FOUND] %s@%s in the following package files:\n", pkgName, version)
 			for _, path := range matches {
 				fmt.Printf("\t%s\n", path)
