@@ -7,16 +7,15 @@ from an authored list. Uses `mdfind` or `mlocate` to efficiently locate and sear
 
 ## Building
 
-Build cross-platform binaries for macOS, Linux, and Windows:
+Build cross-platform binaries for macOS and Linux:
 
 ```sh
 make build
 ```
 
 This produces binaries in the `bin/` directory:
-- `npmprobe-darwin-aarch64` — macOS (Apple Silicon)
+- `npmprobe` — macOS (Apple Silicon)
 - `npmprobe-linux-x86_64` — Linux (x86_64)
-- `npmprobe-windows-x86_64.exe` — Windows (x86_64)
 
 ### Testing on Linux with Docker
 
@@ -34,7 +33,7 @@ on a Linux Alpine system with the `locate` database pre-populated.
 
 - `make all` — builds binaries, normalizes the `compromised.txt` list, and runs a
   verbose probe against the current system.
-- `make build` — cross-compiles binaries for macOS, Linux, and Windows.
+- `make build` — cross-compiles binaries for macOS and Linux.
 - `make fmt` — formats all Go source files using `go fmt`.
 - `make prepare-list` — normalizes `compromised.txt` (sorts and removes duplicates).
 - `make docker-test` — builds and runs the Docker test image on Linux.
@@ -44,7 +43,7 @@ on a Linux Alpine system with the `locate` database pre-populated.
 Probe for all packages and versions in the `compromised.txt` file:
 
 ```sh
-./bin/npmprobe-darwin-aarch64 -v < compromised.txt
+./bin/npmprobe -v compromised.txt
 [OK]   @operato/help@9.0.36 not present in any files
 [OK]   @operato/help@9.0.37 not present in any files
 [OK]   @operato/help@9.0.38 not present in any files
@@ -56,7 +55,8 @@ are output to the console for further action. When a compromised package is foun
 it displays the matching files:
 
 ```sh
-./bin/npmprobe-darwin-aarch64 < compromised.txt
+./bin/npmprobe compromised.txt
+...
 [FOUND] etag@1.8.1 in the following package files:
 	/Users/me/Development/project/node_modules/express/package.json
 	/Users/me/Development/project/node_modules/vite/package.json
@@ -84,8 +84,11 @@ This sorts and removes duplicates. Then commit and push your changes.
 ## Development
 
 The project is written in Go and organized as follows:
+
 - `cmd/npmprobe/` — main entry point
-- `internal/mdfind/` — mdfind query wrapper
+- `internal/mdfind/` — macOS `mdfind` query wrapper
+- `internal/mlocate/` — Linux `mlocate` query wrapper
 - `internal/finder/` — file loading and searching logic
+- `compromised.txt` — list of known compromised packages
 
 Happy hacking!

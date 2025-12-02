@@ -28,9 +28,7 @@ build: fmt
 	@mkdir -p bin
 	@echo "Building npmprobe for multiple platforms..."
 	GOOS=darwin GOARCH=arm64 go build -o bin/npmprobe ./cmd/npmprobe
-	GOOS=darwin GOARCH=arm64 go build -o bin/npmprobe-darwin-aarch64 ./cmd/npmprobe
 	GOOS=linux GOARCH=amd64 go build -o bin/npmprobe-linux-x86_64 ./cmd/npmprobe
-	GOOS=windows GOARCH=amd64 go build -o bin/npmprobe-windows-x86_64.exe ./cmd/npmprobe
 	@echo "Build complete. Binaries in bin/"
 	@ls -lh bin/npmprobe-*
 
