@@ -13,28 +13,30 @@ import (
 )
 
 func main() {
+	// Handle command-line flags
 	// Verbose: show packages that are not found in any files
 	verbose := flag.Bool("v", false, "show packages not found in any files")
 	flag.Parse()
 
-	inputFile := "-"
+	listFile := "-"
 	if len(flag.Args()) > 0 {
-		inputFile = flag.Args()[0]
+		listFile = flag.Args()[0]
 	}
 
+	// Exit code: 0 = no findings, 1 = findings
 	result := 0
 
-	// Initialize the file map from mdfind results (errors will panic)
-	fmt.Fprintf(os.Stderr, "Initializing file map from mdfind results...\n")
-	fileMap := finder.LoadPackageFiles()
-	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", len(fileMap))
+	// Initialize the package store from mdfind results (errors will panic)
+	fmt.Fprintf(os.Stderr, "Initializing package store from mdfind results...\n")
+	packageStore := finder.LoadPackageStore()
+	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
-	// Read package list from input
+	// Read compromised package list from input
 	input := os.Stdin
-	if inputFile != "-" {
-		f, err := os.Open(inputFile)
+	if listFile != "-" {
+		f, err := os.Open(listFile)
 		if err != nil {
-			log.Fatalf("Error opening input file: %v\n", err)
+			panic(fmt.Sprintf("Error opening input file: %v\n", err))
 		}
 		defer f.Close()
 		input = f
@@ -42,7 +44,7 @@ func main() {
 
 	// Read all input packages first so we can show a percentage progress bar.
 	scanner := bufio.NewScanner(input)
-	packages := make([]string, 0)
+	compromisedPackages := make([]string, 0)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -53,7 +55,7 @@ func main() {
 		if len(parts) < 2 {
 			continue
 		}
-		packages = append(packages, line)
+		compromisedPackages = append(compromisedPackages, line)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error reading input: %v\n", err)
@@ -62,37 +64,51 @@ func main() {
 	packageCount := 0
 	foundCount := 0
 
-	total := len(packages)
+	// Buffer for formatted findings when not in verbose mode
+	bufferedFindings := make([]string, 0)
+
+	total := len(compromisedPackages)
 	fmt.Fprintf(os.Stderr, "Scanning packages...\n")
 	if total == 0 {
 		fmt.Fprintf(os.Stderr, "No packages to scan\n")
 	}
 
 	// Progress bar settings
-	barWidth := 30
+	barWidth := 50
 	lastPercent := -1
 
-	for i, pkg := range packages {
+	for i, pkg := range compromisedPackages {
 
 		// Parse package and version into a matcher
-		matcher, err := parser.ParseLine(pkg)
+		packageMatcher, err := parser.ParseLine(pkg)
 		if err != nil {
 			panic(fmt.Sprintf("Error parsing package line '%s': %v", pkg, err))
 		}
 
 		packageCount++
-		pkgName := matcher.Name()
-		version := matcher.Version()
+		pkgName := packageMatcher.Name()
+		version := packageMatcher.Version()
 		found := false
 
-		// Search for the package in the file map
-		matches := finder.FindPackageInFiles(fileMap, pkgName, version)
+		// Search for the package in the store using the matcher
+		matches := finder.FindPackageInStore(packageStore, packageMatcher)
 		if len(matches) > 0 {
 
-			fmt.Printf("[FOUND] %s@%s in the following package files:\n", pkgName, version)
+			// Format the finding
+			var b strings.Builder
+			fmt.Fprintf(&b, "[FOUND] %s@%s in the following package files:\n", pkgName, version)
 			for _, path := range matches {
-				fmt.Printf("\t%s\n", path)
+				fmt.Fprintf(&b, "\t%s\n", path)
 			}
+
+			if *verbose {
+				// Print immediately in verbose mode
+				fmt.Print(b.String())
+			} else {
+				// Buffer the formatted output to print at the end
+				bufferedFindings = append(bufferedFindings, b.String())
+			}
+
 			found = true
 			foundCount++
 			result = 1
@@ -125,6 +141,13 @@ func main() {
 	// Finish progress bar line
 	if total > 0 {
 		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	// If not verbose, print buffered findings now
+	if !*verbose && len(bufferedFindings) > 0 {
+		for _, s := range bufferedFindings {
+			fmt.Print(s)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

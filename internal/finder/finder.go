@@ -1,71 +1,25 @@
 package finder
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"strings"
-
-	"github.com/olle/npmprobe/internal/mdfind"
+	"github.com/olle/npmprobe/internal/parser"
+	"github.com/olle/npmprobe/internal/store"
 )
 
-// FileMap holds file paths and their contents indexed by filepath
-type FileMap map[string]string
-
-// LoadPackageFiles loads all package.json and package-lock.json files into memory
+// LoadPackageStore loads all package.json and package-lock.json files using the default store.
 // This function panics on any underlying mdfind error; unreadable files are skipped.
-func LoadPackageFiles() FileMap {
-	fm := make(FileMap)
-
-	// Query for package.json and package-lock.json files
-	query := `kMDItemFSName == "package.json" || kMDItemFSName == "package-lock.json"`
-	files := mdfind.FindFiles(query)
-
-	// Read each file into the map
-	for _, path := range files {
-		if _, err := os.Stat(path); err != nil {
-			// Skip files that don't exist or can't be stat'd
-			continue
-		}
-
-		content, err := ioutil.ReadFile(path)
-		if err != nil {
-			// Skip unreadable files
-			continue
-		}
-
-		fm[path] = string(content)
-	}
-
-	return fm
+func LoadPackageStore() store.PackageStore {
+	return store.NewDefaultStore()
 }
 
-// FindPackageInFiles searches for a package@version in the loaded file map
-func FindPackageInFiles(fm FileMap, pkgName, version string) []string {
-	var matches []string
-	searchStr := fmt.Sprintf(`"%s":`, pkgName)
-	versionStr := fmt.Sprintf(`%s"`, version)
+// FindPackageInStore searches for a package (represented by a parser.Matcher)
+// in the package store and returns paths where the package appears.
+func FindPackageInStore(s store.PackageStore, matcher parser.Matcher) []string {
 
-	for path, content := range fm {
-
-		found := false
-		// Check if both package name and version appear in the file
-		if strings.Contains(content, searchStr) && strings.Contains(content, versionStr) {
-
-			// Check each line for both package name and version
-			for _, line := range strings.Split(content, "\n") {
-				if strings.Contains(line, searchStr) && strings.Contains(line, versionStr) {
-					found = true
-					break
-				}
-			}
-
-		}
-
-		if found {
-			matches = append(matches, path)
-		}
+	// Quick check: if the store does not contain the package name at all, return empty result
+	if s.DoesNotContainPackage(matcher.Name()) {
+		return []string{}
 	}
 
-	return matches
+	// Look for a full match in the store
+	return s.Find(matcher)
 }
