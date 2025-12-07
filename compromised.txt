@@ -197,7 +197,7 @@
 @ctrl/shared-torrent 6.3.1
 @ctrl/shared-torrent 6.3.2
 @ctrl/tinycolor 4.1.1
-@ctrl/tinycolor 4.1.1, @4.1.2
+@ctrl/tinycolor 4.1.1, 4.1.2
 @ctrl/tinycolor 4.1.2
 @ctrl/torrent-file 4.1.1
 @ctrl/torrent-file 4.1.2
