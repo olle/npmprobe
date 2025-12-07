@@ -26,12 +26,13 @@ func main() {
 	// Exit code: 0 = no findings, 1 = findings
 	result := 0
 
-	// Initialize the package store from mdfind results (errors will panic)
-	fmt.Fprintf(os.Stderr, "Initializing package store from mdfind results...\n")
+	// Initialize the package store (errors will panic)
+	fmt.Fprintf(os.Stderr, "Initializing package store...\n")
 	packageStore := finder.LoadPackageStore()
 	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
-	// Read compromised package list from input
+	// Open reader for input list of compromised packages
+	// Default to stdin if listFile is "-", else open the specified file
 	input := os.Stdin
 	if listFile != "-" {
 		f, err := os.Open(listFile)
@@ -50,7 +51,7 @@ func main() {
 		if line == "" {
 			continue
 		}
-		// Keep only lines that look like 'package version' (space-separated)
+		// Keep only lines that look like 'package version...' (space-separated)
 		parts := strings.Split(line, " ")
 		if len(parts) < 2 {
 			continue
