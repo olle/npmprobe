@@ -84,12 +84,20 @@ This sorts and removes duplicates. Then commit and push your changes.
 
 ## Development
 
-The project is written in Go and organized as follows:
+The program is organized around three core abstractions:
 
-- `cmd/npmprobe/` — main entry point
-- `internal/mdfind/` — macOS `mdfind` query wrapper
-- `internal/mlocate/` — Linux `mlocate` query wrapper
-- `internal/finder/` — file loading and searching logic
-- `compromised.txt` — list of known compromised packages
+**cmd/npmprobe/** — Main entry point handling CLI arguments, file I/O, and output formatting.
+
+**internal/finder/** — Loads the package store and provides the public API.
+
+**internal/parser/** — Parses compromised package lines supporting multiple formats (single versions, comma-separated versions).
+
+**internal/store/** — In-memory package database with query methods. Supports pluggable file finders.
+
+**internal/mdfind/** — Platform-specific file search (macOS mdfind, Linux locate, Windows filesystem walking).
+
+**internal/spinner/** — CLI spinner animation for user feedback during initialization.
+
+To build: `make build` | To test: `go test ./...` | To format: `make fmt`
 
 Happy hacking!
