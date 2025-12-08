@@ -65,11 +65,12 @@ it displays the matching files:
 
 ### Flags
 
+- `-h`: help. Displays usage information.
+
 - `-v`: verbose. When set, the tool prints packages that were not found in any
   scanned `package.json`/`package-lock.json` files (lines prefixed with
   `[OK]`). By default (without `-v`) only found matches (`[FOUND]`) are
   printed.
-
 
 ## Adding new packages
 
