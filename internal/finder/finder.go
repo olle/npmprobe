@@ -2,13 +2,23 @@ package finder
 
 import (
 	"github.com/olle/npmprobe/internal/parser"
+	"github.com/olle/npmprobe/internal/spinner"
 	"github.com/olle/npmprobe/internal/store"
 )
 
 // LoadPackageStore loads all package.json and package-lock.json files using the default store.
-// This function panics on any underlying mdfind error; unreadable files are skipped.
+// It automatically selects the appropriate file finder based on the current platform.
+// Displays a spinner animation while loading.
+// This function panics on any underlying file system errors; unreadable files are skipped.
 func LoadPackageStore() store.PackageStore {
-	return store.NewDefaultStore()
+	spin := spinner.NewSpinner()
+	spin.Start("Scanning filesystem for package files...")
+
+	finder := store.NewAutoFileFinder()
+	packageStore := store.NewDefaultStoreWithFinder(finder)
+
+	spin.Stop()
+	return packageStore
 }
 
 // FindPackageInStore searches for a package (represented by a parser.Matcher)

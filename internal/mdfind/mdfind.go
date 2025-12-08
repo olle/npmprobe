@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
 
 // FindFiles runs the appropriate system search command (mdfind on macOS, locate on Linux)
-// to find files matching the given query. On any error it will panic so callers don't need
-// to handle the error case.
+// to find files matching the given query. On Windows, it falls back to pure Go filesystem walking.
+// On any error it will panic so callers don't need to handle the error case.
 func FindFiles(query string) []string {
 	var files []string
 
@@ -20,6 +21,8 @@ func FindFiles(query string) []string {
 		files = findFilesMacOS(query)
 	case "linux":
 		files = findFilesLinux(query)
+	case "windows":
+		files = findFilesWindows(query)
 	default:
 		panic(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
 	}
@@ -102,4 +105,59 @@ func extractFilenamesFromQuery(query string) []string {
 	}
 
 	return filenames
+}
+
+// findFilesWindows uses pure Go filesystem walking to find files on Windows
+// This is a fallback for Windows where system-specific search tools are not available
+func findFilesWindows(query string) []string {
+	// Extract filenames from the query
+	filenames := extractFilenamesFromQuery(query)
+	if len(filenames) == 0 {
+		return []string{}
+	}
+
+	// Build a map of filenames to search for
+	targetFiles := make(map[string]struct{})
+	for _, fn := range filenames {
+		targetFiles[fn] = struct{}{}
+	}
+
+	// Search from common root drives on Windows
+	var allFiles []string
+	drives := []string{"C:\\", "D:\\", "E:\\", "F:\\"}
+
+	for _, drive := range drives {
+		if _, err := os.Stat(drive); err != nil {
+			// Skip if drive doesn't exist
+			continue
+		}
+
+		files := findFilesInDirectory(drive, targetFiles)
+		allFiles = append(allFiles, files...)
+	}
+
+	return allFiles
+}
+
+// findFilesInDirectory recursively searches for target files starting from a root directory
+func findFilesInDirectory(root string, targetFiles map[string]struct{}) []string {
+	var results []string
+
+	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			// Skip inaccessible directories and continue
+			return nil
+		}
+
+		// Check if this file is one of our targets
+		if !info.IsDir() {
+			if _, exists := targetFiles[info.Name()]; exists {
+				results = append(results, path)
+			}
+		}
+
+		return nil
+	})
+
+	return results
 }

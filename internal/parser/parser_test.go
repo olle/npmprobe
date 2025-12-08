@@ -10,36 +10,56 @@ func TestParseLine_ValidInput(t *testing.T) {
 		input   string
 		expName string
 		expVer  string
+		expVers []string
 	}{
 		{
 			name:    "simple package and version",
 			input:   "lodash 4.17.21",
 			expName: "lodash",
 			expVer:  "4.17.21",
+			expVers: []string{"4.17.21"},
 		},
 		{
 			name:    "scoped package",
 			input:   "@babel/core 7.20.0",
 			expName: "@babel/core",
 			expVer:  "7.20.0",
+			expVers: []string{"7.20.0"},
 		},
 		{
 			name:    "version with pre-release",
 			input:   "react 18.0.0-alpha.1",
 			expName: "react",
 			expVer:  "18.0.0-alpha.1",
+			expVers: []string{"18.0.0-alpha.1"},
 		},
 		{
 			name:    "leading/trailing whitespace",
 			input:   "  express 4.18.2  ",
 			expName: "express",
 			expVer:  "4.18.2",
+			expVers: []string{"4.18.2"},
 		},
 		{
 			name:    "extra fields ignored",
 			input:   "typescript 4.9.4 extra stuff here",
 			expName: "typescript",
 			expVer:  "4.9.4",
+			expVers: []string{"4.9.4"},
+		},
+		{
+			name:    "comma-separated versions",
+			input:   "lodash 4.17.20,4.17.21,4.17.22",
+			expName: "lodash",
+			expVer:  "4.17.20",
+			expVers: []string{"4.17.20", "4.17.21", "4.17.22"},
+		},
+		{
+			name:    "comma-separated with spaces",
+			input:   "react 18.0.0, 18.1.0 , 18.2.0",
+			expName: "react",
+			expVer:  "18.0.0",
+			expVers: []string{"18.0.0", "18.1.0", "18.2.0"},
 		},
 	}
 
@@ -60,6 +80,16 @@ func TestParseLine_ValidInput(t *testing.T) {
 
 			if got := matcher.Version(); got != tt.expVer {
 				t.Errorf("Version() = %q, want %q", got, tt.expVer)
+			}
+
+			if got := matcher.Versions(); len(got) != len(tt.expVers) {
+				t.Errorf("Versions() length = %d, want %d", len(got), len(tt.expVers))
+			} else {
+				for i, v := range got {
+					if v != tt.expVers[i] {
+						t.Errorf("Versions()[%d] = %q, want %q", i, v, tt.expVers[i])
+					}
+				}
 			}
 		})
 	}
