@@ -12,11 +12,102 @@ import (
 	"github.com/olle/npmprobe/internal/parser"
 )
 
+const helpText = `npmprobe - exhaustive npm package compromise detector
+
+USAGE:
+  npmprobe [FLAGS] [FILE]
+
+DESCRIPTION:
+  npmprobe performs an exhaustive search of your filesystem to find all npm
+  package.json and package-lock.json files, then checks them against a list
+  of known compromised packages. It uses efficient filesystem traversal to
+  minimize scan time and provides clear output for CI/CD integration.
+
+ARGUMENTS:
+  FILE
+    Path to a file containing compromised packages to check against.
+    Each line should contain a package name and version(s) in one of these formats:
+      - package version               (single version)
+      - package v1,v2,v3              (comma-separated versions)
+      - package v1, v2, v3            (comma-separated with spaces)
+    
+    If FILE is omitted or "-", npmprobe reads from standard input (stdin).
+    This allows piping package lists from other tools.
+
+FLAGS:
+  -v
+    Verbose output. When enabled, prints all checked packages including those
+    not found in the system (prefixed with [OK]). Without this flag, only
+    found matches (prefixed with [FOUND]) are displayed.
+  
+  -h
+    Display this help message and exit.
+
+EXAMPLES:
+  # Check packages from a file with verbose output:
+  $ npmprobe -v compromised.txt
+
+  # Check packages from stdin:
+  $ echo "lodash 4.17.20" | npmprobe
+
+  # Pipe results from a vulnerability database:
+  $ cat vulnerability-list.txt | npmprobe -v
+
+OUTPUT:
+  When a compromised package is found, npmprobe outputs:
+    [FOUND] package@version in the following package files:
+      /path/to/node_modules/package/package.json
+      /path/to/another/node_modules/package/package.json
+
+  With -v flag, non-found packages are shown as:
+    [OK]   package@version not present in any files
+
+  Progress information is displayed on stderr while scanning, allowing you to
+  monitor the scan progress. Final results show:
+    - Total packages scanned
+    - Number of compromised packages found
+    - Overall completion status
+
+EXIT CODES:
+  0 - No compromised packages found (success)
+  1 - One or more compromised packages found (failure)
+
+PERFORMANCE:
+  npmprobe uses efficient filesystem search techniques:
+  - On macOS: Native mdfind Spotlight database for fast searching
+  - On Linux: locate command database when available
+  - On Windows: Filesystem walking with configurable search paths
+  
+  First run may take longer as packages are loaded into memory. Subsequent
+  queries against the same system snapshot are faster.
+
+CROSS-PLATFORM SUPPORT:
+  npmprobe is compiled for:
+  - macOS (Apple Silicon and Intel)
+  - Linux (x86_64)
+  - Windows (with pure Go filesystem walking)
+
+LICENSE:
+  See LICENSE file in the repository for licensing information.
+`
+
+func printHelp() {
+	fmt.Print(helpText)
+}
+
 func main() {
 	// Handle command-line flags
 	// Verbose: show packages that are not found in any files
 	verbose := flag.Bool("v", false, "show packages not found in any files")
+	help := flag.Bool("h", false, "display help message")
+
 	flag.Parse()
+
+	// Handle help flag
+	if *help {
+		printHelp()
+		os.Exit(0)
+	}
 
 	listFile := "-"
 	if len(flag.Args()) > 0 {
