@@ -26,8 +26,7 @@ func main() {
 	// Exit code: 0 = no findings, 1 = findings
 	result := 0
 
-	// Initialize the package store (errors will panic)
-	fmt.Fprintf(os.Stderr, "Initializing package store...\n")
+	// Initialize the package store with spinner animation
 	packageStore := finder.LoadPackageStore()
 	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
