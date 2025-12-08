@@ -2,16 +2,15 @@ package store
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strings"
 
-	"github.com/olle/npmprobe/internal/mdfind"
 	"github.com/olle/npmprobe/internal/parser"
 )
 
 // PackageStore is an abstraction for storing and searching package files.
 // It provides an interface for finding packages by name and version(s).
+// The interface is designed to be extensible, allowing additional query methods
+// to be added by embedding or implementing additional interfaces.
 type PackageStore interface {
 
 	// DoesNotContainPackage checks if the store does not contain any entries for the given package name.
@@ -22,6 +21,10 @@ type PackageStore interface {
 
 	// Size returns the number of files in the store.
 	Size() int
+
+	// QueryByNameAndVersions queries for a package by name and specific versions.
+	// This method is designed to allow extensible query patterns.
+	QueryByNameAndVersions(packageName string, versions []string) []string
 }
 
 // DefaultStore is a basic implementation of PackageStore that stores file contents in memory.
@@ -36,85 +39,25 @@ type DefaultStore struct {
 }
 
 // NewDefaultStore creates a new DefaultStore by loading all package.json and package-lock.json files.
-// This function panics on any underlying mdfind error; unreadable files are skipped.
+// This is a convenience function that uses the auto-detecting FileFinder.
+// This function panics on any underlying file system errors; unreadable files are skipped.
+// Deprecated: Use NewDefaultStoreWithFinder with NewAutoFileFinder() instead for better flexibility.
 func NewDefaultStore() PackageStore {
-	ds := &DefaultStore{
-		files: make(map[string]string),
-	}
-
-	// Query for package.json and package-lock.json files
-	query := `kMDItemFSName == "package.json" || kMDItemFSName == "package-lock.json"`
-	files := mdfind.FindFiles(query)
-
-	// Read each file into the store
-	for _, path := range files {
-		if _, err := os.Stat(path); err != nil {
-			// Skip files that don't exist or can't be stat'd
-			continue
-		}
-
-		content, err := ioutil.ReadFile(path)
-		if err != nil {
-			// Skip unreadable files
-			continue
-		}
-
-		ds.files[path] = string(content)
-	}
-
-	// Build the package index for quick existence checks
-	ds.packageIndex = make(map[string]struct{})
-	for _, content := range ds.files {
-		lines := strings.Split(content, "\n")
-		for _, line := range lines {
-			parts := strings.Fields(line)
-			for _, part := range parts {
-
-				// Trim and sanitize the part, skipping if empty
-				part = strings.TrimSpace(part)
-				part = strings.Trim(part, `",:{}$%()`)
-				if len(part) == 0 {
-					continue
-				}
-
-				// Skip common non-package name parts
-				prefixes := []string{"sha512-", "https://", "http://", "git+", "file://"}
-				skip := false
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(part, prefix) {
-						skip = true
-						break
-					}
-				}
-
-				// Skip known keywords
-				for _, skipWord := range []string{"version", "dependencies", "devDependencies", "optionalDependencies", "peerDependencies"} {
-					if part == skipWord {
-						skip = true
-						break
-					}
-				}
-
-				// This is not a package name, skip it!
-				if skip {
-					continue
-				}
-
-				// Add to the package index
-				ds.packageIndex[part] = struct{}{}
-			}
-		}
-	}
-
-	return ds
+	return NewDefaultStoreWithFinder(NewAutoFileFinder())
 }
 
 // Find searches for a package (from the matcher) in all stored files.
 // Returns a list of file paths where any version of the package is found.
 func (ds *DefaultStore) Find(matcher parser.Matcher) []string {
+	versions := matcher.Versions()
+	return ds.QueryByNameAndVersions(matcher.Name(), versions)
+}
+
+// QueryByNameAndVersions queries for a package by name and specific versions.
+// Returns a list of file paths where the package with any of the specified versions is found.
+func (ds *DefaultStore) QueryByNameAndVersions(packageName string, versions []string) []string {
 	var matches []string
-	packageSearchStr := fmt.Sprintf(`"%s":`, matcher.Name())
-	versions := []string{matcher.Version()}
+	packageSearchStr := fmt.Sprintf(`"%s":`, packageName)
 
 	for path, content := range ds.files {
 
@@ -125,7 +68,7 @@ func (ds *DefaultStore) Find(matcher parser.Matcher) []string {
 			continue
 		}
 
-		// Check each line for package name and the version
+		// Check each line for package name and any of the versions
 		for _, line := range strings.Split(content, "\n") {
 
 			if !strings.Contains(line, packageSearchStr) {

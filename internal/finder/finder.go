@@ -6,9 +6,11 @@ import (
 )
 
 // LoadPackageStore loads all package.json and package-lock.json files using the default store.
-// This function panics on any underlying mdfind error; unreadable files are skipped.
+// It automatically selects the appropriate file finder based on the current platform.
+// This function panics on any underlying file system errors; unreadable files are skipped.
 func LoadPackageStore() store.PackageStore {
-	return store.NewDefaultStore()
+	finder := store.NewAutoFileFinder()
+	return store.NewDefaultStoreWithFinder(finder)
 }
 
 // FindPackageInStore searches for a package (represented by a parser.Matcher)
