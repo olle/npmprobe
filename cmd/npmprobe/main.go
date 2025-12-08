@@ -95,34 +95,36 @@ func printHelp() {
 	fmt.Print(helpText)
 }
 
+/*
+ * Main entry point for npmprobe command-line tool.
+ */
 func main() {
-	// Handle command-line flags
-	// Verbose: show packages that are not found in any files
+
+	// Declare and parse command-line flag arguments.
 	verbose := flag.Bool("v", false, "show packages not found in any files")
 	help := flag.Bool("h", false, "display help message")
-
 	flag.Parse()
 
-	// Handle help flag
+	// Help flag: print help and exit.
 	if *help {
 		printHelp()
 		os.Exit(0)
 	}
 
+	// Input file argument: default to stdin ("-") if not provided
 	listFile := "-"
 	if len(flag.Args()) > 0 {
 		listFile = flag.Args()[0]
 	}
 
-	// Exit code: 0 = no findings, 1 = findings
+	// Execution result, code: 0 = no findings, 1 = findings
 	result := 0
 
-	// Initialize the package store with spinner animation
+	// Initialize the package store
 	packageStore := finder.LoadPackageStore()
 	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
 	// Open reader for input list of compromised packages
-	// Default to stdin if listFile is "-", else open the specified file
 	input := os.Stdin
 	if listFile != "-" {
 		f, err := os.Open(listFile)
@@ -148,6 +150,7 @@ func main() {
 		}
 		compromisedPackages = append(compromisedPackages, line)
 	}
+
 	if err := scanner.Err(); err != nil {
 		log.Fatalf("Error reading input: %v\n", err)
 	}
@@ -158,16 +161,18 @@ func main() {
 	// Buffer for formatted findings when not in verbose mode
 	bufferedFindings := make([]string, 0)
 
+	// Exit early if no packages to scan
 	total := len(compromisedPackages)
-	fmt.Fprintf(os.Stderr, "Scanning packages...\n")
 	if total == 0 {
 		fmt.Fprintf(os.Stderr, "No packages to scan\n")
+		os.Exit(0)
 	}
+
+	fmt.Fprintf(os.Stderr, "Scanning packages...\n")
 
 	// Progress bar settings
 	barWidth := 50
 	lastPercent := -1
-
 	for i, pkg := range compromisedPackages {
 
 		// Parse package and version into a matcher
@@ -193,7 +198,6 @@ func main() {
 			}
 
 			if *verbose {
-				// Print immediately in verbose mode
 				fmt.Print(b.String())
 			} else {
 				// Buffer the formatted output to print at the end
