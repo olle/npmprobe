@@ -7,7 +7,7 @@ endif
 
 .PHONY: all
 all: build prepare-list
-	./bin/npmprobe -v compromised.txt
+	./bin/npmprobe compromised.txt
 
 ##
 ## Normalize list of compromised packages by sorting and removing
@@ -24,7 +24,7 @@ prepare-list:
 ## Outputs to bin/ directory with platform-specific names.
 ##
 .PHONY: build
-build: fmt
+build: fmt verify
 	@mkdir -p bin
 	@echo "Building npmprobe for multiple platforms..."
 	GOOS=darwin GOARCH=arm64 go build -o bin/npmprobe ./cmd/npmprobe
