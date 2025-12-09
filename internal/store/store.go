@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -57,36 +58,22 @@ func (ds *DefaultStore) Find(matcher parser.Matcher) []string {
 // Returns a list of file paths where the package with any of the specified versions is found.
 func (ds *DefaultStore) QueryByNameAndVersions(packageName string, versions []string) []string {
 	var matches []string
-	packageSearchStr := fmt.Sprintf(`"%s":`, packageName)
 
 	for path, content := range ds.files {
 
 		found := false
 
 		// Check if package name appears in the file at all
-		if !strings.Contains(content, packageSearchStr) {
+		if !strings.Contains(content, packageName) {
 			continue
 		}
 
-		// Check each line for package name and any of the versions
-		for _, line := range strings.Split(content, "\n") {
-
-			if !strings.Contains(line, packageSearchStr) {
-				continue
-			}
-
-			// Check if any of the versions appear in this line
-			for _, version := range versions {
-				versionStr := fmt.Sprintf(`%s`, version)
-				if strings.Contains(line, versionStr) {
-					found = true
-					break
-				}
-			}
-
-			if found {
-				break
-			}
+		// Dependency or line search string assumes `"<packageName>":` as format.
+		packageLineSearchStr := fmt.Sprintf(`"%s":`, packageName)
+		if findLineByLine(content, packageLineSearchStr, versions) {
+			found = true
+		} else if findByPackageNameAndVersion(content, packageName, versions) {
+			found = true
 		}
 
 		if found {
@@ -106,4 +93,45 @@ func (ds *DefaultStore) DoesNotContainPackage(packageName string) bool {
 // Size returns the number of files in the store.
 func (ds *DefaultStore) Size() int {
 	return len(ds.files)
+}
+
+// findLineByLine searches for a package name and versions line by line in content.
+// Returns true if any line contains the package name and any of the versions.
+func findLineByLine(content string, packageSearchStr string, versions []string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		if !strings.Contains(line, packageSearchStr) {
+			continue
+		}
+
+		// Check if any of the versions appear in this line
+		for _, version := range versions {
+			if strings.Contains(line, version) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Parses the actual JSON content and checks for package name and versions.
+func findByPackageNameAndVersion(content string, packageName string, versions []string) bool {
+
+	type PackageJson struct {
+		Name    string `json:"name,omitempty"`
+		Version string `json:"version,omitempty"`
+	}
+
+	var packageJson PackageJson
+	err := json.Unmarshal([]byte(content), &packageJson)
+	if err != nil {
+		panic(fmt.Sprintf("Error unmarshaling package.json content: %v", err))
+	}
+
+	for _, version := range versions {
+		if packageJson.Name == packageName && packageJson.Version == version {
+			return true
+		}
+	}
+
+	return false
 }
