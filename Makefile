@@ -7,7 +7,6 @@ endif
 
 .PHONY: all
 all: prepare-list run
-	./bin/npmprobe compromised.txt
 
 ##
 ## Normalize list of compromised packages by sorting and removing
