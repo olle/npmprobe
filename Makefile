@@ -6,7 +6,7 @@ endif
 
 
 .PHONY: all
-all: build prepare-list
+all: prepare-list run
 	./bin/npmprobe compromised.txt
 
 ##
@@ -18,6 +18,10 @@ prepare-list:
 	cat compromised.txt | sort | uniq > temp.txt
 	cp temp.txt compromised.txt
 	rm temp.txt
+
+.PHONY: run
+run: verify
+	go run ./cmd/npmprobe -v compromised.txt
 
 ##
 ## Cross-compile the npmprobe Go binary for multiple platforms.
