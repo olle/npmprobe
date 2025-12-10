@@ -96,6 +96,20 @@ func TestParseLine_ValidInput(t *testing.T) {
 			expVer:  "1.4.0",
 			expVers: []string{"1.4.0", "1.4.1", "1.4.2"},
 		},
+		{
+			name:    "scoped package with multiple versions",
+			input:   "@angular/core 12.0.0,12.1.0,12.2.0",
+			expName: "@angular/core",
+			expVer:  "12.0.0",
+			expVers: []string{"12.0.0", "12.1.0", "12.2.0"},
+		},
+		{
+			name:    "package with hyphen in name",
+			input:   "my-package 1.0.0,1.1.0",
+			expName: "my-package",
+			expVer:  "1.0.0",
+			expVers: []string{"1.0.0", "1.1.0"},
+		},
 	}
 
 	for _, tt := range tests {
