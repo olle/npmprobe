@@ -80,7 +80,7 @@ func TestParseLine_ValidInput(t *testing.T) {
 			input:   "jquery \t 3.6.0",
 			expName: "jquery",
 			expVer:  "3.6.0",
-			expVers: []string{"3.6.0"},	
+			expVers: []string{"3.6.0"},
 		},
 		{
 			name:    "single version with trailing comma",
