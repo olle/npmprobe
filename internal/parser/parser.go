@@ -66,7 +66,10 @@ func (mvm *MultiVersionMatcher) Versions() []string {
 // Extra fields beyond the version spec are ignored.
 // Returns a Matcher implementation and an error if the line cannot be parsed.
 func ParseLine(line string) (Matcher, error) {
+
 	line = strings.TrimSpace(line)
+	line = strings.ReplaceAll(line, "\t", " ")
+	line = strings.ReplaceAll(line, " ", " ")
 
 	// Skip empty lines
 	if line == "" {

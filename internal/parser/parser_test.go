@@ -61,6 +61,41 @@ func TestParseLine_ValidInput(t *testing.T) {
 			expVer:  "18.0.0",
 			expVers: []string{"18.0.0", "18.1.0", "18.2.0"},
 		},
+		{
+			name:    "multiple spaces between fields",
+			input:   "vue    3.2.31",
+			expName: "vue",
+			expVer:  "3.2.31",
+			expVers: []string{"3.2.31"},
+		},
+		{
+			name:    "tab characters as whitespace",
+			input:   "angular\t12.2.16",
+			expName: "angular",
+			expVer:  "12.2.16",
+			expVers: []string{"12.2.16"},
+		},
+		{
+			name:    "mixed whitespace characters",
+			input:   "jquery \t 3.6.0",
+			expName: "jquery",
+			expVer:  "3.6.0",
+			expVers: []string{"3.6.0"},	
+		},
+		{
+			name:    "single version with trailing comma",
+			input:   "ember 3.28.0,",
+			expName: "ember",
+			expVer:  "3.28.0",
+			expVers: []string{"3.28.0"},
+		},
+		{
+			name:    "versions with spaces after commas",
+			input:   "backbone 1.4.0, 1.4.1 , 1.4.2 ",
+			expName: "backbone",
+			expVer:  "1.4.0",
+			expVers: []string{"1.4.0", "1.4.1", "1.4.2"},
+		},
 	}
 
 	for _, tt := range tests {
