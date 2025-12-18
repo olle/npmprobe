@@ -1363,9 +1363,9 @@ react-native-worklet-functions 3.3.3
 react-packery-component 1.0.3
 react-qr-image 1.1.1
 react-scrambled-text 1.0.4
-react-server-dom-parcel 19.0 19.1.0 19.1.1 19.2.0
-react-server-dom-turbopack 19.0 19.1.0 19.1.1 19.2.0
-react-server-dom-webpack 19.0 19.1.0 19.1.1 19.2.0
+react-server-dom-parcel 19.0, 19.1.0, 19.1.1, 19.2.0
+react-server-dom-turbopack 19.0, 19.1.0, 19.1.1, 19.2.0
+react-server-dom-webpack 19.0, 19.1.0, 19.1.1, 19.2.0
 rediff 1.0.5
 rediff-viewer 0.0.7
 redux-forge 2.5.3

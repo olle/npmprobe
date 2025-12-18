@@ -183,7 +183,7 @@ func main() {
 
 		packageCount++
 		pkgName := packageMatcher.Name()
-		version := packageMatcher.Version()
+		versions := packageMatcher.Versions()
 		found := false
 
 		// Search for the package in the store using the matcher
@@ -192,9 +192,10 @@ func main() {
 
 			// Format the finding
 			var b strings.Builder
-			fmt.Fprintf(&b, "[FOUND] %s@%s in the following package files:\n", pkgName, version)
-			for _, path := range matches {
-				fmt.Fprintf(&b, "\t%s\n", path)
+
+			for _, match := range matches {
+				fmt.Fprintf(&b, "[FOUND] %s@%s in the following package files:\n", pkgName, match.Version)
+				fmt.Fprintf(&b, "\t%s\n", match.Path)
 			}
 
 			if *verbose {
@@ -210,7 +211,9 @@ func main() {
 		}
 
 		if !found && *verbose {
-			fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+			for _, version := range versions {
+				fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+			}
 		}
 
 		// Update progress bar on stderr. Re-draw only when percent changes.

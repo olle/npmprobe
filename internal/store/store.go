@@ -8,6 +8,11 @@ import (
 	"github.com/olle/npmprobe/internal/parser"
 )
 
+type PackageMatch struct {
+	Path    string
+	Version string
+}
+
 // PackageStore is an abstraction for storing and searching package files.
 // It provides an interface for finding packages by name and version(s).
 // The interface is designed to be extensible, allowing additional query methods
@@ -18,7 +23,7 @@ type PackageStore interface {
 	DoesNotContainPackage(packageName string) bool
 
 	// Find searches for a package matcher in the store and returns file paths where matches are found.
-	Find(matcher parser.Matcher) []string
+	Find(matcher parser.Matcher) []PackageMatch
 
 	// Size returns the number of files in the store.
 	Size() int
@@ -49,10 +54,38 @@ func NewDefaultStore() PackageStore {
 
 // Find searches for a package (from the matcher) in all stored files.
 // Returns a list of file paths where any version of the package is found.
-func (ds *DefaultStore) Find(matcher parser.Matcher) []string {
+func (ds *DefaultStore) Find(matcher parser.Matcher) []PackageMatch {
+
 	versions := matcher.Versions()
-	return ds.QueryByNameAndVersions(matcher.Name(), versions)
+	packageName := matcher.Name()
+	var matches []PackageMatch
+
+	for path, content := range ds.files {
+
+		if !strings.Contains(content, packageName) {
+			continue
+		}
+
+		packageLineSearchStr := fmt.Sprintf(`"%s":`, packageName)
+		for _, version := range versions {
+			if findLineByLine(content, packageLineSearchStr, []string{version}) {
+				matches = append(matches, PackageMatch{
+					Path:    path,
+					Version: version,
+				})
+			} else if findByPackageNameAndVersion(content, packageName, []string{version}) {
+				matches = append(matches, PackageMatch{
+					Path:    path,
+					Version: version,
+				})	
+			}
+		}
+	}
+
+	return matches
 }
+
+
 
 // QueryByNameAndVersions queries for a package by name and specific versions.
 // Returns a list of file paths where the package with any of the specified versions is found.

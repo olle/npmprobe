@@ -23,11 +23,11 @@ func LoadPackageStore() store.PackageStore {
 
 // FindPackageInStore searches for a package (represented by a parser.Matcher)
 // in the package store and returns paths where the package appears.
-func FindPackageInStore(s store.PackageStore, matcher parser.Matcher) []string {
+func FindPackageInStore(s store.PackageStore, matcher parser.Matcher) []store.PackageMatch {
 
 	// Quick check: if the store does not contain the package name at all, return empty result
 	if s.DoesNotContainPackage(matcher.Name()) {
-		return []string{}
+		return []store.PackageMatch{}
 	}
 
 	// Look for a full match in the store
