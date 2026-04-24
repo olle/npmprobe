@@ -140,6 +140,7 @@
 @asyncapi/web-component 2.6.6
 @asyncapi/web-component 2.6.7
 @bdkinc/knex-ibmi 0.5.7
+@bitwarden/cli 2026.4.0
 @browserbasehq/bb9 1.2.21
 @browserbasehq/director-ai 1.0.3
 @browserbasehq/mcp 2.1.1
