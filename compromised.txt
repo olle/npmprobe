@@ -148,6 +148,9 @@
 @browserbasehq/sdk-functions 0.0.4
 @browserbasehq/stagehand 3.0.4
 @browserbasehq/stagehand-docs 1.0.1
+@cap-js/db-service 2.10.1
+@cap-js/postgres 2.2.2
+@cap-js/sqlite 2.2.2
 @caretive/caret-cli 0.0.2
 @chtijs/eslint-config 1.0.1
 @clausehq/flows-step-httprequest 0.1.14
@@ -1353,6 +1356,7 @@ lui-vue-test 0.70.9
 luno-api 1.2.3
 m25-transaction-utils 1.1.16
 manual-billing-system-miniapp-api 1.3.1
+mbt 1.2.48
 mcfly-semantic-release 1.3.1
 mcp-knowledge-base 0.0.2
 mcp-knowledge-graph 1.2.1
