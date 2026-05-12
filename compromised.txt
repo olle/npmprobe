@@ -1,4 +1,3 @@
-
 @accordproject/concerto-analysis 3.24.1
 @accordproject/concerto-linter 3.24.1
 @accordproject/concerto-linter-default-ruleset 3.24.1
