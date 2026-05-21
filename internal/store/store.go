@@ -77,15 +77,13 @@ func (ds *DefaultStore) Find(matcher parser.Matcher) []PackageMatch {
 				matches = append(matches, PackageMatch{
 					Path:    path,
 					Version: version,
-				})	
+				})
 			}
 		}
 	}
 
 	return matches
 }
-
-
 
 // QueryByNameAndVersions queries for a package by name and specific versions.
 // Returns a list of file paths where the package with any of the specified versions is found.
