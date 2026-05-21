@@ -30,7 +30,7 @@ ARGUMENTS:
       - package version               (single version)
       - package v1,v2,v3              (comma-separated versions)
       - package v1, v2, v3            (comma-separated with spaces)
-    
+
     If FILE is omitted or "-", npmprobe reads from standard input (stdin).
     This allows piping package lists from other tools.
 
@@ -39,7 +39,7 @@ FLAGS:
     Verbose output. When enabled, prints all checked packages including those
     not found in the system (prefixed with [OK]). Without this flag, only
     found matches (prefixed with [FOUND]) are displayed.
-  
+
   -h
     Display this help message and exit.
 
@@ -77,7 +77,7 @@ PERFORMANCE:
   - On macOS: Native mdfind Spotlight database for fast searching
   - On Linux: locate command database when available
   - On Windows: Filesystem walking with configurable search paths
-  
+
   First run may take longer as packages are loaded into memory. Subsequent
   queries against the same system snapshot are faster.
 
@@ -252,7 +252,7 @@ func main() {
 		log.Fatalf("Error reading input: %v\n", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Scanned %d packages\n", packageCount)
+	fmt.Fprintf(os.Stderr, "Scanned for %d packages\n", packageCount)
 
 	if result == 0 {
 		fmt.Fprintf(os.Stderr, "No findings, ok\n")
