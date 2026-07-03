@@ -669,6 +669,7 @@
 @fishingbooker/react-pagination 2.0.6
 @fishingbooker/react-raty 2.0.1
 @fishingbooker/react-swiper 0.1.5
+@gsd-build/sdk
 @hapheus/n8n-nodes-pgp 1.5.1
 @hestjs/core 0.2.1
 @hestjs/cqrs 0.1.6
@@ -1742,6 +1743,8 @@ gatsby-plugin-cname 1.0.1
 gatsby-plugin-cname 1.0.2
 generator-meteor-stock 0.1.6
 generator-ng-itobuz 0.0.15
+get-shit-done-cc
+get-shit-done-codex
 get-them-args 1.3.3
 git-branch-selector 1.3.3, 1.3.4, 1.3.5, 1.3.6, 1.3.7
 git-git-git 1.0.8, 1.0.9, 1.0.10, 1.0.11, 1.0.12
