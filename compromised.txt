@@ -360,8 +360,11 @@
 @asyncapi/edavisualiser 1.2.2
 @asyncapi/generator 2.8.5
 @asyncapi/generator 2.8.6
+@asyncapi/generator 3.3.1
 @asyncapi/generator-components 0.3.2
 @asyncapi/generator-components 0.3.3
+@asyncapi/generator-components 0.7.1
+@asyncapi/generator-helpers	1.1.1
 @asyncapi/generator-helpers 0.2.1
 @asyncapi/generator-helpers 0.2.2
 @asyncapi/generator-react-sdk 1.1.4
@@ -410,6 +413,10 @@
 @asyncapi/react-component 2.6.7
 @asyncapi/server-api 0.16.24
 @asyncapi/server-api 0.16.25
+@asyncapi/specs	6.10.1
+@asyncapi/specs	6.11.2
+@asyncapi/specs	6.11.2-alpha.1
+@asyncapi/specs	6.8.2
 @asyncapi/specs 6.8.3
 @asyncapi/specs 6.9.1
 @asyncapi/studio 1.0.2
