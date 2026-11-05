@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/olle/npmprobe/internal/mdfind"
@@ -62,23 +61,10 @@ func (mf *MDFindFileFinder) FindFiles() ([]string, error) {
 	return mdfind.FindFiles(mf.query)
 }
 
-// NewAutoFileFinder creates a file finder appropriate for the current platform.
-// On macOS it uses mdfind; on Linux it uses locate; on Windows it walks the
-// filesystem.
+// NewAutoFileFinder creates a file finder appropriate for the current
+// platform. The mdfind package dispatches to mdfind on macOS, locate on Linux,
+// and a filesystem walk on Windows.
 func NewAutoFileFinder() FileFinder {
-	switch runtime.GOOS {
-	case "darwin":
-		// Use native mdfind on macOS for better performance
-		return NewMDFindFileFinder(packageFileQuery())
-	default:
-		// Use the platform-specific system search on Linux and Windows.
-		return NewGoFileFinder()
-	}
-}
-
-// NewGoFileFinder creates a finder for the supported package files. On Linux
-// it uses locate; on Windows it walks the filesystem.
-func NewGoFileFinder() FileFinder {
 	return NewMDFindFileFinder(packageFileQuery())
 }
 
