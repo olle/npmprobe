@@ -88,7 +88,10 @@ OUTPUT:
 EXIT CODES:
   0 - No compromised packages found (success)
   1 - One or more compromised packages found (failure)
-  2 - Invalid input or operational error
+  2 - Invalid input, discovery failure, or other operational error
+
+  npmprobe fails closed: if no package files can be discovered or read, it
+  exits with code 2 rather than reporting a clean scan.
 
 PERFORMANCE:
   npmprobe uses efficient filesystem search techniques:
@@ -191,7 +194,11 @@ func main() {
 	}
 
 	// Initialize the package store only after the list has been validated.
-	packageStore := finder.LoadPackageStore()
+	packageStore, err := finder.LoadPackageStore()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error discovering package files: %v\n", err)
+		os.Exit(2)
+	}
 	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
 	fmt.Fprintf(os.Stderr, "Scanning packages...\n")

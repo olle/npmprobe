@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -8,6 +9,10 @@ import (
 
 	"github.com/olle/npmprobe/internal/mdfind"
 )
+
+// ErrNoPackageFiles is returned when discovery finds no supported package
+// files. Callers must treat this as an operational failure, not a clean scan.
+var ErrNoPackageFiles = errors.New("no supported package files found")
 
 // packageFileNames lists the package and lockfile formats understood by the
 // store. Discovery must look for the same names the indexers support.
@@ -39,7 +44,7 @@ func packageFileQuery() string {
 
 // FileFinder is an abstraction for finding files in the filesystem.
 type FileFinder interface {
-	FindFiles() []string
+	FindFiles() ([]string, error)
 }
 
 // MDFindFileFinder wraps the mdfind tool (macOS-specific)
@@ -53,7 +58,7 @@ func NewMDFindFileFinder(query string) FileFinder {
 }
 
 // FindFiles uses mdfind to find files
-func (mf *MDFindFileFinder) FindFiles() []string {
+func (mf *MDFindFileFinder) FindFiles() ([]string, error) {
 	return mdfind.FindFiles(mf.query)
 }
 
@@ -81,13 +86,24 @@ func NewGoFileFinder() FileFinder {
 // This allows for different file discovery strategies. The store builds its
 // version index while reading the files; files that cannot be read or parsed
 // are skipped.
-func NewDefaultStoreWithFinder(finder FileFinder) PackageStore {
+//
+// It fails closed: an empty discovery result or a store with no readable files
+// is returned as an error so a scan cannot silently report success.
+func NewDefaultStoreWithFinder(finder FileFinder) (PackageStore, error) {
+	paths, err := finder.FindFiles()
+	if err != nil {
+		return nil, err
+	}
+	if len(paths) == 0 {
+		return nil, ErrNoPackageFiles
+	}
+
 	ds := &DefaultStore{
 		index: NewIndex(),
 	}
 
 	// Use the provided finder to locate files
-	for _, path := range finder.FindFiles() {
+	for _, path := range paths {
 		content, err := os.ReadFile(path)
 		if err != nil {
 			// Skip files that don't exist or can't be read
@@ -97,5 +113,9 @@ func NewDefaultStoreWithFinder(finder FileFinder) PackageStore {
 		ds.index.AddFile(path, content)
 	}
 
-	return ds
+	if ds.Size() == 0 {
+		return nil, fmt.Errorf("discovered %d package file(s), but none could be read", len(paths))
+	}
+
+	return ds, nil
 }

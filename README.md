@@ -85,6 +85,16 @@ npmprobe indexes installed versions from:
 Dependency ranges in manifests are ignored; only resolved or installed versions
 are matched.
 
+### Exit codes
+
+- `0` — no compromised packages found
+- `1` — one or more compromised packages found
+- `2` — invalid input, discovery failure, or other operational error
+
+npmprobe fails closed: if no package files can be discovered or read, it exits
+with code `2` instead of reporting a clean scan. External searches (`mdfind`,
+`locate`) are bounded by a timeout so a hung search cannot stall the scan.
+
 ## Adding new packages
 
 Edit `compromised.txt` and normalize the list using:

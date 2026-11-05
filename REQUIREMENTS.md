@@ -14,6 +14,8 @@ This file lists the requirements for the npmprobe project.
   `bun.lock`.
 - Easy to use, scanning for compromised packages returning an exit code.
 - Compatible with CI/CD pipelines.
+- Fails closed when no package files can be discovered or read, instead of
+  reporting a clean scan.
 - Prints progress information to the user, including number of files scanned.
 
 ## Technical Details
@@ -50,7 +52,8 @@ abstractions:
    - compromised list file path
    - verbose output
 2. Initialize package store, loading all package files found by the finder,
-reporting progress to the user.
+reporting progress to the user. Abort with exit code 2 if discovery fails or
+finds no readable package files.
 3. Parse compromised list file, reporting progress to the user and preparing
 data structure for queries against the store.
 4. For each compromised package and version, query the store for existence.

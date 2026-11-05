@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,10 +13,11 @@ import (
 
 type staticFinder struct {
 	files []string
+	err   error
 }
 
-func (f staticFinder) FindFiles() []string {
-	return f.files
+func (f staticFinder) FindFiles() ([]string, error) {
+	return f.files, f.err
 }
 
 // newTestStore writes the supplied files (keyed by slash-separated relative
@@ -36,7 +38,11 @@ func newTestStore(t *testing.T, files map[string]string) (PackageStore, string) 
 		paths = append(paths, path)
 	}
 
-	return NewDefaultStoreWithFinder(staticFinder{files: paths}), root
+	store, err := NewDefaultStoreWithFinder(staticFinder{files: paths})
+	if err != nil {
+		t.Fatalf("load store: %v", err)
+	}
+	return store, root
 }
 
 // findings returns the matches for a package line as "relative/path@version",
@@ -243,10 +249,13 @@ func TestSizeCountsUniqueFiles(t *testing.T) {
 		t.Errorf("Size() = %d, want 2", got)
 	}
 
-	store = NewDefaultStoreWithFinder(staticFinder{files: []string{
+	store, err := NewDefaultStoreWithFinder(staticFinder{files: []string{
 		filepath.Join(root, "app", "package.json"),
 		filepath.Join(root, "app", "package.json"),
 	}})
+	if err != nil {
+		t.Fatalf("load store: %v", err)
+	}
 	if got := store.Size(); got != 1 {
 		t.Errorf("Size() with duplicate finder results = %d, want 1", got)
 	}
@@ -265,5 +274,32 @@ func TestMalformedFilesAreSkipped(t *testing.T) {
 	assertFindings(t, store, root, "lodash 4.17.20")
 	if got := store.Size(); got != 6 {
 		t.Errorf("Size() = %d, want 6 (readable files are still counted)", got)
+	}
+}
+
+func TestNewDefaultStoreWithFinderPropagatesDiscoveryError(t *testing.T) {
+	discoveryErr := errors.New("discovery failed")
+
+	_, err := NewDefaultStoreWithFinder(staticFinder{err: discoveryErr})
+	if !errors.Is(err, discoveryErr) {
+		t.Fatalf("error = %v, want %v", err, discoveryErr)
+	}
+}
+
+func TestNewDefaultStoreWithFinderFailsOnZeroDiscoveredFiles(t *testing.T) {
+	_, err := NewDefaultStoreWithFinder(staticFinder{})
+	if !errors.Is(err, ErrNoPackageFiles) {
+		t.Fatalf("error = %v, want %v", err, ErrNoPackageFiles)
+	}
+}
+
+func TestNewDefaultStoreWithFinderFailsWhenNoFilesAreReadable(t *testing.T) {
+	root := t.TempDir()
+
+	_, err := NewDefaultStoreWithFinder(staticFinder{files: []string{
+		filepath.Join(root, "missing", "package.json"),
+	}})
+	if err == nil {
+		t.Fatal("error = nil, want an error when no discovered files can be read")
 	}
 }

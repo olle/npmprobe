@@ -2,49 +2,105 @@ package mdfind
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
-// FindFiles runs the appropriate system search command (mdfind on macOS, locate on Linux)
-// to find files matching the given query. On Windows, it falls back to pure Go filesystem walking.
-// On any error it will panic so callers don't need to handle the error case.
-func FindFiles(query string) []string {
-	var files []string
+// searchTimeout bounds the external search commands so a hung mdfind or
+// locate cannot stall the whole scan.
+var searchTimeout = 2 * time.Minute
+
+// FindFiles runs the appropriate system search command (mdfind on macOS,
+// locate on Linux) to find files matching the given query. On Windows it falls
+// back to pure Go filesystem walking.
+//
+// It returns an error when discovery cannot be completed reliably, so callers
+// can fail closed instead of reporting a clean scan for an empty result set.
+func FindFiles(query string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), searchTimeout)
+	defer cancel()
 
 	switch runtime.GOOS {
 	case "darwin":
-		files = findFilesMacOS(query)
+		return findFilesMacOS(ctx, query)
 	case "linux":
-		files = findFilesLinux(query)
+		return findFilesLinux(ctx, query)
 	case "windows":
-		files = findFilesWindows(query)
+		return findFilesWindows(query)
 	default:
-		panic(fmt.Errorf("unsupported OS: %s", runtime.GOOS))
+		return nil, fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 	}
-
-	return files
 }
 
-// findFilesMacOS uses mdfind to find files matching the query
-func findFilesMacOS(query string) []string {
-	cmd := exec.Command("mdfind", query)
+// findFilesMacOS uses mdfind to find files matching the query.
+func findFilesMacOS(ctx context.Context, query string) ([]string, error) {
+	out, err := runSearchCommand(ctx, "mdfind", query)
+	if err != nil {
+		return nil, err
+	}
+	return splitLines(out), nil
+}
+
+// findFilesLinux uses locate to find files matching the requested package and
+// lockfile names. A locate exit status of 1 means "no matches"; any other
+// failure aborts discovery.
+func findFilesLinux(ctx context.Context, query string) ([]string, error) {
+	// Extract filenames from the Spotlight query. Expected format:
+	// kMDItemFSName == "package.json" || kMDItemFSName == "yarn.lock" || ...
+	// Each filename is searched separately using locate.
+	filenames := extractFilenamesFromQuery(query)
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("discovery query contains no file names")
+	}
+
+	var files []string
+	for _, filename := range filenames {
+		out, err := runSearchCommand(ctx, "locate", filename)
+		if err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+				// GNU locate uses exit status 1 when nothing matched.
+				continue
+			}
+			return nil, err
+		}
+		files = append(files, splitLines(out)...)
+	}
+
+	return files, nil
+}
+
+// runSearchCommand runs an external search command with the supplied context
+// and returns its standard output. Failures include the command's stderr and
+// timeouts are reported distinctly.
+func runSearchCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
 	var out bytes.Buffer
 	var errb bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errb
 
-	if err := cmd.Run(); err != nil {
-		panic(fmt.Errorf("mdfind failed: %w; stderr=%s", err, errb.String()))
+	err := cmd.Run()
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, fmt.Errorf("%s timed out after %s", name, searchTimeout)
 	}
+	if err != nil {
+		return nil, fmt.Errorf("%s failed: %w; stderr=%s", name, err, strings.TrimSpace(errb.String()))
+	}
+	return out.Bytes(), nil
+}
 
-	// Parse newline-separated output
-	result := bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n"))
-	var files []string
+// splitLines parses newline-separated command output into non-empty paths.
+func splitLines(out []byte) []string {
+	result := bytes.Split(bytes.TrimSpace(out), []byte("\n"))
+	files := make([]string, 0, len(result))
 	for _, b := range result {
 		if len(b) > 0 {
 			files = append(files, string(b))
@@ -53,42 +109,9 @@ func findFilesMacOS(query string) []string {
 	return files
 }
 
-// findFilesLinux uses locate to find files matching the requested package and
-// lockfile names.
-func findFilesLinux(query string) []string {
-	// Extract filenames from the Spotlight query. Expected format:
-	// kMDItemFSName == "package.json" || kMDItemFSName == "yarn.lock" || ...
-	// Each filename is searched separately using locate.
-	filenames := extractFilenamesFromQuery(query)
-
-	var files []string
-	for _, filename := range filenames {
-		cmd := exec.Command("locate", filename)
-		var out bytes.Buffer
-		var errb bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &errb
-
-		if err := cmd.Run(); err != nil {
-			// If locate fails (e.g., database not updated), skip but warn
-			fmt.Fprintf(os.Stderr, "Warning: locate failed for %s: %v\n", filename, err)
-			continue
-		}
-
-		// Parse newline-separated output
-		result := bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n"))
-		for _, b := range result {
-			if len(b) > 0 {
-				files = append(files, string(b))
-			}
-		}
-	}
-
-	return files
-}
-
-// extractFilenamesFromQuery parses the Spotlight query to extract filenames
-// Handles format like: kMDItemFSName == "file1" || kMDItemFSName == "file2"
+// extractFilenamesFromQuery parses the Spotlight query to extract filenames.
+// It handles a format like:
+// kMDItemFSName == "file1" || kMDItemFSName == "file2"
 func extractFilenamesFromQuery(query string) []string {
 	var filenames []string
 
@@ -108,13 +131,14 @@ func extractFilenamesFromQuery(query string) []string {
 	return filenames
 }
 
-// findFilesWindows uses pure Go filesystem walking to find files on Windows
-// This is a fallback for Windows where system-specific search tools are not available
-func findFilesWindows(query string) []string {
+// findFilesWindows uses pure Go filesystem walking to find files on Windows.
+// This is a fallback for Windows where system-specific search tools are not
+// available.
+func findFilesWindows(query string) ([]string, error) {
 	// Extract filenames from the query
 	filenames := extractFilenamesFromQuery(query)
 	if len(filenames) == 0 {
-		return []string{}
+		return nil, fmt.Errorf("discovery query contains no file names")
 	}
 
 	// Build a map of filenames to search for
@@ -125,6 +149,7 @@ func findFilesWindows(query string) []string {
 
 	// Search from common root drives on Windows
 	var allFiles []string
+	foundDrive := false
 	drives := []string{"C:\\", "D:\\", "E:\\", "F:\\"}
 
 	for _, drive := range drives {
@@ -132,20 +157,32 @@ func findFilesWindows(query string) []string {
 			// Skip if drive doesn't exist
 			continue
 		}
+		foundDrive = true
 
-		files := findFilesInDirectory(drive, targetFiles)
+		files, err := findFilesInDirectory(drive, targetFiles)
+		if err != nil {
+			return nil, fmt.Errorf("walking %s: %w", drive, err)
+		}
 		allFiles = append(allFiles, files...)
 	}
 
-	return allFiles
+	if !foundDrive {
+		return nil, fmt.Errorf("no accessible filesystem drives found")
+	}
+
+	return allFiles, nil
 }
 
-// findFilesInDirectory recursively searches for target files starting from a root directory
-func findFilesInDirectory(root string, targetFiles map[string]struct{}) []string {
+// findFilesInDirectory recursively searches for target files starting from a
+// root directory. Inaccessible subdirectories are skipped.
+func findFilesInDirectory(root string, targetFiles map[string]struct{}) ([]string, error) {
 	var results []string
 
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			if path == root {
+				return err
+			}
 			// Skip inaccessible directories and continue
 			return nil
 		}
@@ -159,6 +196,9 @@ func findFilesInDirectory(root string, targetFiles map[string]struct{}) []string
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return results
+	return results, nil
 }
