@@ -18,11 +18,12 @@ This file lists the requirements for the npmprobe project.
 
 - The main command is easy to read and understand, making use of 3 critical
 abstractions:
-  - The package store - an in-memory database of found package files, and their
-    contents. The store supports direct queries for package names and their
-    existence, per file. It provides methods to scan for distinct packages and
-    version per line by line in each file. It also provides for ways to extend
-    the store with additional methods to query the data.
+  - The package store - an in-memory index of installed package versions,
+    mapping package name and version to the files that contain them. The index
+    is built once while loading package.json and package-lock.json files using
+    per-file-format indexers, so queries are exact and do not rescan file
+    contents. The store supports direct queries for package names, versions,
+    and their existence, and is extensible with additional query methods.
   - Package file finder. A file system walker that searches for package.json
     and package-lock.json files. It uses efficient file system traversal
     techniques to minimize the time taken to find files. It returns a list

@@ -92,7 +92,7 @@ The program is organized around three core abstractions:
 
 **internal/parser/** — Parses compromised package lines supporting multiple formats (single versions, comma-separated versions).
 
-**internal/store/** — In-memory package database with query methods. Supports pluggable file finders.
+**internal/store/** — In-memory version index (package name → version → file paths) built from parsed `package.json` and `package-lock.json` files. Supports pluggable file finders and per-file-format indexers.
 
 **internal/mdfind/** — Platform-specific file search (macOS mdfind, Linux locate, Windows filesystem walking).
 

@@ -1,10 +1,8 @@
 package store
 
 import (
-	"io/ioutil"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/olle/npmprobe/internal/mdfind"
 )
@@ -54,73 +52,23 @@ func NewGoFileFinder() FileFinder {
 }
 
 // NewDefaultStoreWithFinder creates a new DefaultStore using a custom FileFinder.
-// This allows for different file discovery strategies.
+// This allows for different file discovery strategies. The store builds its
+// version index while reading the files; files that cannot be read or parsed
+// are skipped.
 func NewDefaultStoreWithFinder(finder FileFinder) PackageStore {
 	ds := &DefaultStore{
-		files: make(map[string]string),
+		index: NewIndex(),
 	}
 
 	// Use the provided finder to locate files
-	files := finder.FindFiles()
-
-	// Read each file into the store
-	for _, path := range files {
-		if _, err := os.Stat(path); err != nil {
-			// Skip files that don't exist or can't be stat'd
-			continue
-		}
-
-		content, err := ioutil.ReadFile(path)
+	for _, path := range finder.FindFiles() {
+		content, err := os.ReadFile(path)
 		if err != nil {
-			// Skip unreadable files
+			// Skip files that don't exist or can't be read
 			continue
 		}
 
-		ds.files[path] = string(content)
-	}
-
-	// Build the package index for quick existence checks
-	ds.packageIndex = make(map[string]struct{})
-	for _, content := range ds.files {
-		lines := strings.Split(content, "\n")
-		for _, line := range lines {
-			parts := strings.Fields(line)
-			for _, part := range parts {
-
-				// Trim and sanitize the part, skipping if empty
-				part = strings.TrimSpace(part)
-				part = strings.Trim(part, `",:{}$%()`)
-				if len(part) == 0 {
-					continue
-				}
-
-				// Skip common non-package name parts
-				prefixes := []string{"sha512-", "https://", "http://", "git+", "file://"}
-				skip := false
-				for _, prefix := range prefixes {
-					if strings.HasPrefix(part, prefix) {
-						skip = true
-						break
-					}
-				}
-
-				// Skip known keywords
-				for _, skipWord := range []string{"version", "dependencies", "devDependencies", "optionalDependencies", "peerDependencies"} {
-					if part == skipWord {
-						skip = true
-						break
-					}
-				}
-
-				// This is not a package name, skip it!
-				if skip {
-					continue
-				}
-
-				// Add to the package index
-				ds.packageIndex[part] = struct{}{}
-			}
-		}
+		ds.index.AddFile(path, content)
 	}
 
 	return ds
