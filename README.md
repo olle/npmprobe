@@ -93,6 +93,12 @@ any whitespace:
 Invalid lines are reported with their line number and cause npmprobe to exit
 with code 2 rather than being silently skipped.
 
+## See also
+
+For broader supply-chain and security scanning beyond npm, check out
+[secrep](https://codeberg.org/BuJo/secrep). Its curated lists are also a source
+for entries in this project's `compromised.txt`.
+
 ## Development
 
 The program is organized around three core abstractions:
