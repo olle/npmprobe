@@ -6,7 +6,7 @@ import (
 	"github.com/olle/npmprobe/internal/store"
 )
 
-// LoadPackageStore loads all package.json and package-lock.json files using the default store.
+// LoadPackageStore loads all supported package and lockfiles using the default store.
 // It automatically selects the appropriate file finder based on the current platform.
 // Displays a spinner animation while loading.
 // This function panics on any underlying file system errors; unreadable files are skipped.

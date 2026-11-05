@@ -9,7 +9,9 @@ This file lists the requirements for the npmprobe project.
 ## Features
 
 - Exhaustive search for npm package files in whole filesystem.
-- Finds any package.json and package-lock.json files, regardless of location.
+- Finds package manifests and lockfiles regardless of location: `package.json`,
+  `package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml`, and
+  `bun.lock`.
 - Easy to use, scanning for compromised packages returning an exit code.
 - Compatible with CI/CD pipelines.
 - Prints progress information to the user, including number of files scanned.
@@ -20,12 +22,13 @@ This file lists the requirements for the npmprobe project.
 abstractions:
   - The package store - an in-memory index of installed package versions,
     mapping package name and version to the files that contain them. The index
-    is built once while loading package.json and package-lock.json files using
+    is built once while loading package manifests and lockfiles using
     per-file-format indexers, so queries are exact and do not rescan file
-    contents. The store supports direct queries for package names, versions,
+    contents. The indexers cover npm, Yarn classic and Berry, pnpm v5/v6/v9,
+    and Bun text lockfiles. The store supports direct queries for package names, versions,
     and their existence, and is extensible with additional query methods.
-  - Package file finder. A file system walker that searches for package.json
-    and package-lock.json files. It uses efficient file system traversal
+  - Package file finder. A file system walker that searches for supported
+    package manifests and lockfiles. It uses efficient file system traversal
     techniques to minimize the time taken to find files. It returns a list
     of found files to be loaded by the package store. Initial implementation
     uses native tools, such as mdfind on macOS, and mlocate or plocate on
@@ -54,3 +57,20 @@ data structure for queries against the store.
    - If found, print details to the user or aggregate results for CI/CD or
    a final report with exit code.
 5. Exit with code 0 if no compromised packages found, otherwise exit with code 1.
+
+## Development
+
+- `cmd/npmprobe/` — Main entry point handling CLI arguments, file I/O, and output
+  formatting.
+- `internal/finder/` — Loads the package store and provides the public API.
+- `internal/parser/` — Parses compromised package lines supporting multiple
+  formats (single versions, comma-separated versions).
+- `internal/store/` — In-memory version index (package name → version → file
+  paths) built from parsed package manifests and lockfiles. Supports pluggable
+  file finders and per-file-format indexers for npm, Yarn, pnpm, and Bun files.
+- `internal/mdfind/` — Platform-specific file search (macOS mdfind, Linux
+  locate, Windows filesystem walking).
+- `internal/spinner/` — CLI spinner animation for user feedback during
+  initialization.
+
+To build: `make build` | To test: `go test ./...` | To format: `make fmt`

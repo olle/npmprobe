@@ -7,8 +7,8 @@ import (
 )
 
 // GoWalkerFinder is a pure Go implementation of the PackageFileFinder.
-// It walks the filesystem to find package.json and package-lock.json files
-// without relying on external tools like mdfind or locate.
+// It walks the filesystem to find the configured package manifests and
+// lockfiles without relying on external tools like mdfind or locate.
 // This implementation is slower than system-specific tools but provides
 // better cross-platform support, including Windows.
 type GoWalkerFinder struct {

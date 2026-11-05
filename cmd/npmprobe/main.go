@@ -17,10 +17,24 @@ USAGE:
   npmprobe [FLAGS] [FILE]
 
 DESCRIPTION:
-  npmprobe performs an exhaustive search of your filesystem to find all npm
-  package.json and package-lock.json files, then checks them against a list
-  of known compromised packages. It uses efficient filesystem traversal to
-  minimize scan time and provides clear output for CI/CD integration.
+  npmprobe is an exhaustive npm package compromise detector. It searches your
+  filesystem for installed npm packages and checks every installed version
+  against a list of known compromised packages. It is intended for local
+  audits and CI/CD pipelines, and exits non-zero when a match is found.
+
+  Supported files are package.json, package-lock.json, npm-shrinkwrap.json,
+  yarn.lock, pnpm-lock.yaml, and bun.lock.
+
+HOW IT WORKS:
+  1. Read the compromised package list from FILE or stdin.
+  2. Discover package manifests and lockfiles across the filesystem, using
+     Spotlight (mdfind) on macOS, locate on Linux, or a filesystem walk on
+     Windows.
+  3. Index the installed package name, version, and file paths in memory, so
+     each list entry can be checked with an exact lookup instead of rescanning
+     file contents.
+  4. Match every entry against the index and report the package files that
+     contain a compromised version.
 
 ARGUMENTS:
   FILE
@@ -42,7 +56,7 @@ FLAGS:
     not found in the system (prefixed with [OK]). Without this flag, only
     found matches (prefixed with [FOUND]) are displayed.
 
-  -h
+  -h, --help
     Display this help message and exit.
 
 EXAMPLES:
@@ -106,11 +120,13 @@ func main() {
 
 	// Declare and parse command-line flag arguments.
 	verbose := flag.Bool("v", false, "show packages not found in any files")
-	help := flag.Bool("h", false, "display help message")
+	help := false
+	flag.BoolVar(&help, "h", false, "display help message")
+	flag.BoolVar(&help, "help", false, "display help message")
 	flag.Parse()
 
 	// Help flag: print help and exit.
-	if *help {
+	if help {
 		printHelp()
 		os.Exit(0)
 	}

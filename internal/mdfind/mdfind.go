@@ -53,11 +53,12 @@ func findFilesMacOS(query string) []string {
 	return files
 }
 
-// findFilesLinux uses locate to find files matching package.json or package-lock.json
+// findFilesLinux uses locate to find files matching the requested package and
+// lockfile names.
 func findFilesLinux(query string) []string {
-	// Extract filenames from the Spotlight query
-	// Expected format: kMDItemFSName == "package.json" || kMDItemFSName == "package-lock.json"
-	// We'll search for both filenames using locate
+	// Extract filenames from the Spotlight query. Expected format:
+	// kMDItemFSName == "package.json" || kMDItemFSName == "yarn.lock" || ...
+	// Each filename is searched separately using locate.
 	filenames := extractFilenamesFromQuery(query)
 
 	var files []string

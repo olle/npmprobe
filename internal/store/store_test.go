@@ -254,12 +254,16 @@ func TestSizeCountsUniqueFiles(t *testing.T) {
 
 func TestMalformedFilesAreSkipped(t *testing.T) {
 	store, root := newTestStore(t, map[string]string{
-		"bad/package.json":      `{ not json`,
-		"bad/package-lock.json": `also not json`,
+		"bad/package.json":        `{ not json`,
+		"bad/package-lock.json":   `also not json`,
+		"bad/npm-shrinkwrap.json": `also not json`,
+		"bad/yarn.lock":           `not a lockfile`,
+		"bad/pnpm-lock.yaml":      "packages:\n  not a mapping\n",
+		"bad/bun.lock":            `{ not jsonc`,
 	})
 
 	assertFindings(t, store, root, "lodash 4.17.20")
-	if got := store.Size(); got != 2 {
-		t.Errorf("Size() = %d, want 2 (readable files are still counted)", got)
+	if got := store.Size(); got != 6 {
+		t.Errorf("Size() = %d, want 6 (readable files are still counted)", got)
 	}
 }

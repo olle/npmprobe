@@ -2,7 +2,8 @@ NPM Probe
 =========
 
 A Go tool that does an exhaustive check for compromised installed `npm` packages
-from an authored list. Uses `mdfind` or `mlocate` to efficiently locate and search `package.json` and `package-lock.json` files across the system.
+from an authored list. Uses `mdfind` or `mlocate` to efficiently locate and search
+npm package manifests and lockfiles across the system.
 
 
 ## Building
@@ -65,12 +66,24 @@ it displays the matching files:
 
 ### Flags
 
-- `-h`: help. Displays usage information.
+- `-h`, `--help`: help. Displays usage information.
 
 - `-v`: verbose. When set, the tool prints packages that were not found in any
-  scanned `package.json`/`package-lock.json` files (lines prefixed with
-  `[OK]`). By default (without `-v`) only found matches (`[FOUND]`) are
-  printed.
+  scanned package file (lines prefixed with `[OK]`). By default (without `-v`)
+  only found matches (`[FOUND]`) are printed.
+
+### Supported package files
+
+npmprobe indexes installed versions from:
+
+- `package.json` — the package's own name and version
+- `package-lock.json` and `npm-shrinkwrap.json`
+- `yarn.lock` — Yarn classic and Berry
+- `pnpm-lock.yaml` — pnpm v5, v6, and v9
+- `bun.lock` — Bun's text lockfile (`bun.lockb` is not supported)
+
+Dependency ranges in manifests are ignored; only resolved or installed versions
+are matched.
 
 ## Adding new packages
 
@@ -99,22 +112,3 @@ For broader supply-chain and security scanning beyond npm, check out
 [secrep](https://codeberg.org/BuJo/secrep). Its curated lists are also a source
 for entries in this project's `compromised.txt`.
 
-## Development
-
-The program is organized around three core abstractions:
-
-**cmd/npmprobe/** — Main entry point handling CLI arguments, file I/O, and output formatting.
-
-**internal/finder/** — Loads the package store and provides the public API.
-
-**internal/parser/** — Parses compromised package lines supporting multiple formats (single versions, comma-separated versions).
-
-**internal/store/** — In-memory version index (package name → version → file paths) built from parsed `package.json` and `package-lock.json` files. Supports pluggable file finders and per-file-format indexers.
-
-**internal/mdfind/** — Platform-specific file search (macOS mdfind, Linux locate, Windows filesystem walking).
-
-**internal/spinner/** — CLI spinner animation for user feedback during initialization.
-
-To build: `make build` | To test: `go test ./...` | To format: `make fmt`
-
-Happy hacking!

@@ -7,9 +7,8 @@ import (
 )
 
 // fileIndexer extracts installed package versions from one kind of package
-// file. Adding support for another file format (yarn.lock, pnpm-lock.yaml,
-// npm-shrinkwrap.json, ...) is a matter of implementing this interface and
-// registering it in indexerFor.
+// file. Adding support for another file format is a matter of implementing
+// this interface and registering it in indexerFor.
 type fileIndexer interface {
 	Index(index *Index, path string, content []byte)
 }
@@ -20,11 +19,51 @@ func indexerFor(path string) fileIndexer {
 	switch filepath.Base(path) {
 	case "package.json":
 		return packageJSONIndexer{}
-	case "package-lock.json":
+	case "package-lock.json", "npm-shrinkwrap.json":
 		return packageLockIndexer{}
+	case "yarn.lock":
+		return yarnLockIndexer{}
+	case "pnpm-lock.yaml":
+		return pnpmLockIndexer{}
+	case "bun.lock":
+		return bunLockIndexer{}
 	default:
 		return nil
 	}
+}
+
+// trimLockQuotes removes surrounding quotes from a lockfile key or value.
+func trimLockQuotes(value string) string {
+	value = strings.TrimSpace(value)
+	if len(value) >= 2 {
+		if (value[0] == '"' && value[len(value)-1] == '"') ||
+			(value[0] == '\'' && value[len(value)-1] == '\'') {
+			return value[1 : len(value)-1]
+		}
+	}
+	return value
+}
+
+// isVersionToken reports whether a value looks like an installed version
+// rather than a lockfile section or path. It is intentionally permissive:
+// versions may include prerelease and build metadata.
+func isVersionToken(value string) bool {
+	if value == "" || value[0] < '0' || value[0] > '9' {
+		return false
+	}
+	return !strings.ContainsAny(value, " \t/:@")
+}
+
+// isPackageNameToken reports whether a value looks like an npm package name,
+// including scoped names such as "@scope/package".
+func isPackageNameToken(name string) bool {
+	if name == "" || strings.HasSuffix(name, "/") || strings.ContainsAny(name, " \t:") {
+		return false
+	}
+	if strings.HasPrefix(name, "@") {
+		return strings.Count(name[1:], "/") == 1
+	}
+	return !strings.ContainsAny(name, "/@")
 }
 
 // packageJSONIndexer indexes a package.json as the package it describes.
