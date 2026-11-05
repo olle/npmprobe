@@ -92,6 +92,32 @@ func (i *Index) Find(name string, versions []string) []PackageMatch {
 	return matches
 }
 
+// FindAll returns every indexed version of the named package and the files
+// containing them. Versions and paths are sorted for deterministic output.
+func (i *Index) FindAll(name string) []PackageMatch {
+	versionsByName, ok := i.byName[name]
+	if !ok {
+		return nil
+	}
+
+	versions := make([]string, 0, len(versionsByName))
+	for version := range versionsByName {
+		versions = append(versions, version)
+	}
+	sort.Strings(versions)
+
+	var matches []PackageMatch
+	for _, version := range versions {
+		for _, path := range sortedSet(versionsByName[version]) {
+			matches = append(matches, PackageMatch{
+				Path:    path,
+				Version: version,
+			})
+		}
+	}
+	return matches
+}
+
 // Paths returns the distinct files containing any of the given package
 // versions, sorted by path.
 func (i *Index) Paths(name string, versions []string) []string {

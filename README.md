@@ -82,6 +82,17 @@ make prepare-list
 
 This sorts and removes duplicates. Then commit and push your changes.
 
+Each non-empty line supports one of these formats, with fields separated by
+any whitespace:
+
+- `package version` — a single version
+- `package v1,v2,v3` — comma-separated versions
+- `package v1, v2, v3` — comma-separated with spaces
+- `package` — every version of the package
+
+Invalid lines are reported with their line number and cause npmprobe to exit
+with code 2 rather than being silently skipped.
+
 ## Development
 
 The program is organized around three core abstractions:

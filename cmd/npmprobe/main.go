@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -26,11 +25,14 @@ DESCRIPTION:
 ARGUMENTS:
   FILE
     Path to a file containing compromised packages to check against.
-    Each line should contain a package name and version(s) in one of these formats:
+    Each non-empty line contains a package name and optional version(s),
+    separated by any whitespace, in one of these formats:
+      - package                       (all versions)
       - package version               (single version)
       - package v1,v2,v3              (comma-separated versions)
       - package v1, v2, v3            (comma-separated with spaces)
 
+    Invalid lines are reported and cause npmprobe to exit with code 2.
     If FILE is omitted or "-", npmprobe reads from standard input (stdin).
     This allows piping package lists from other tools.
 
@@ -61,6 +63,7 @@ OUTPUT:
 
   With -v flag, non-found packages are shown as:
     [OK]   package@version not present in any files
+    [OK]   package@* not present in any files      (all-versions entry)
 
   Progress information is displayed on stderr while scanning, allowing you to
   monitor the scan progress. Final results show:
@@ -71,6 +74,7 @@ OUTPUT:
 EXIT CODES:
   0 - No compromised packages found (success)
   1 - One or more compromised packages found (failure)
+  2 - Invalid input or operational error
 
 PERFORMANCE:
   npmprobe uses efficient filesystem search techniques:
@@ -120,39 +124,41 @@ func main() {
 	// Execution result, code: 0 = no findings, 1 = findings
 	result := 0
 
-	// Initialize the package store
-	packageStore := finder.LoadPackageStore()
-	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
-
 	// Open reader for input list of compromised packages
+	sourceName := listFile
 	input := os.Stdin
-	if listFile != "-" {
+	if listFile == "-" {
+		sourceName = "<stdin>"
+	} else {
 		f, err := os.Open(listFile)
 		if err != nil {
-			panic(fmt.Sprintf("Error opening input file: %v\n", err))
+			fmt.Fprintf(os.Stderr, "Error opening input file %s: %v\n", listFile, err)
+			os.Exit(2)
 		}
 		defer f.Close()
 		input = f
 	}
 
-	// Read all input packages first so we can show a percentage progress bar.
+	// Read all lines first so we can show a percentage progress bar.
 	scanner := bufio.NewScanner(input)
-	compromisedPackages := make([]string, 0)
+	lines := make([]string, 0)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
-		// Keep only lines that look like 'package version...' (space-separated)
-		parts := strings.Split(line, " ")
-		if len(parts) < 2 {
-			continue
-		}
-		compromisedPackages = append(compromisedPackages, line)
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading %s: %v\n", sourceName, err)
+		os.Exit(2)
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading input: %v\n", err)
+	// Parse the whole list before scanning so invalid entries are never
+	// silently ignored.
+	matchers, parseErrors := parser.ParseLines(lines)
+	if len(parseErrors) > 0 {
+		for _, parseErr := range parseErrors {
+			fmt.Fprintf(os.Stderr, "%s: %v\n", sourceName, parseErr)
+		}
+		fmt.Fprintf(os.Stderr, "Aborting: %d invalid package line(s)\n", len(parseErrors))
+		os.Exit(2)
 	}
 
 	packageCount := 0
@@ -161,26 +167,23 @@ func main() {
 	// Buffer for formatted findings when not in verbose mode
 	bufferedFindings := make([]string, 0)
 
-	// Exit early if no packages to scan
-	total := len(compromisedPackages)
+	// Exit early if no packages to scan, before doing any filesystem work.
+	total := len(matchers)
 	if total == 0 {
 		fmt.Fprintf(os.Stderr, "No packages to scan\n")
 		os.Exit(0)
 	}
+
+	// Initialize the package store only after the list has been validated.
+	packageStore := finder.LoadPackageStore()
+	fmt.Fprintf(os.Stderr, "Loaded %d package files\n", packageStore.Size())
 
 	fmt.Fprintf(os.Stderr, "Scanning packages...\n")
 
 	// Progress bar settings
 	barWidth := 50
 	lastPercent := -1
-	for i, pkg := range compromisedPackages {
-
-		// Parse package and version into a matcher
-		packageMatcher, err := parser.ParseLine(pkg)
-		if err != nil {
-			panic(fmt.Sprintf("Error parsing package line '%s': %v", pkg, err))
-		}
-
+	for i, packageMatcher := range matchers {
 		packageCount++
 		pkgName := packageMatcher.Name()
 		versions := packageMatcher.Versions()
@@ -211,8 +214,12 @@ func main() {
 		}
 
 		if !found && *verbose {
-			for _, version := range versions {
-				fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+			if packageMatcher.AllVersions() {
+				fmt.Printf("[OK]   %s@* not present in any files\n", pkgName)
+			} else {
+				for _, version := range versions {
+					fmt.Printf("[OK]   %s@%s not present in any files\n", pkgName, version)
+				}
 			}
 		}
 
@@ -246,10 +253,6 @@ func main() {
 		for _, s := range bufferedFindings {
 			fmt.Print(s)
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading input: %v\n", err)
 	}
 
 	fmt.Fprintf(os.Stderr, "Scanned for %d packages\n", packageCount)

@@ -1,6 +1,9 @@
 package parser
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -11,6 +14,7 @@ func TestParseLine_ValidInput(t *testing.T) {
 		expName string
 		expVer  string
 		expVers []string
+		expAll  bool
 	}{
 		{
 			name:    "simple package and version",
@@ -110,6 +114,22 @@ func TestParseLine_ValidInput(t *testing.T) {
 			expVer:  "1.0.0",
 			expVers: []string{"1.0.0", "1.1.0"},
 		},
+		{
+			name:    "bare package means all versions",
+			input:   "get-shit-done-cc",
+			expName: "get-shit-done-cc",
+			expVer:  "",
+			expVers: nil,
+			expAll:  true,
+		},
+		{
+			name:    "bare scoped package with surrounding whitespace",
+			input:   " \t@gsd-build/sdk  ",
+			expName: "@gsd-build/sdk",
+			expVer:  "",
+			expVers: nil,
+			expAll:  true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -140,6 +160,10 @@ func TestParseLine_ValidInput(t *testing.T) {
 					}
 				}
 			}
+
+			if got := matcher.AllVersions(); got != tt.expAll {
+				t.Errorf("AllVersions() = %v, want %v", got, tt.expAll)
+			}
 		})
 	}
 }
@@ -156,10 +180,6 @@ func TestParseLine_InvalidInput(t *testing.T) {
 		{
 			name:  "only whitespace",
 			input: "   ",
-		},
-		{
-			name:  "single field",
-			input: "lodash",
 		},
 		{
 			name:  "only tabs",
@@ -197,5 +217,85 @@ func TestSimpleMatcher_Interface(t *testing.T) {
 
 	if sm.Version() != "1.0.0" {
 		t.Errorf("Version() = %q, want %q", sm.Version(), "1.0.0")
+	}
+
+	if sm.AllVersions() {
+		t.Error("AllVersions() = true, want false")
+	}
+}
+
+func TestParseLines(t *testing.T) {
+	lines := []string{
+		"lodash 4.17.20",
+		"",
+		"   ",
+		"@gsd-build/sdk",
+		"@asyncapi/specs\t6.10.1",
+		"broken ,",
+	}
+
+	matchers, failures := ParseLines(lines)
+	if len(failures) != 1 {
+		t.Fatalf("ParseLines() failures = %d, want 1: %v", len(failures), failures)
+	}
+	if len(matchers) != 3 {
+		t.Fatalf("ParseLines() matchers = %d, want 3", len(matchers))
+	}
+
+	lineErr, ok := failures[0].(*LineError)
+	if !ok {
+		t.Fatalf("failure type = %T, want *LineError", failures[0])
+	}
+	if lineErr.Line != 6 {
+		t.Errorf("failure line = %d, want 6", lineErr.Line)
+	}
+
+	if !matchers[1].AllVersions() || matchers[1].Name() != "@gsd-build/sdk" {
+		t.Errorf("matcher 1 = %s (all=%v), want @gsd-build/sdk (all=true)",
+			matchers[1].Name(), matchers[1].AllVersions())
+	}
+
+	tabSeparated := matchers[2]
+	if tabSeparated.Name() != "@asyncapi/specs" || tabSeparated.Version() != "6.10.1" {
+		t.Errorf("tab-separated matcher = %s@%s, want @asyncapi/specs@6.10.1",
+			tabSeparated.Name(), tabSeparated.Version())
+	}
+}
+
+// TestParseCompromisedList guards against silently dropping entries from the
+// real list, including tab-separated lines and bare package names.
+func TestParseCompromisedList(t *testing.T) {
+	path := filepath.Join("..", "..", "compromised.txt")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+
+	lines := strings.Split(strings.TrimSuffix(string(content), "\n"), "\n")
+	matchers, failures := ParseLines(lines)
+	if len(failures) > 0 {
+		t.Fatalf("ParseLines(%s) returned %d errors, first: %v", path, len(failures), failures[0])
+	}
+
+	nonEmpty := 0
+	for _, line := range lines {
+		if strings.TrimSpace(line) != "" {
+			nonEmpty++
+		}
+	}
+	if len(matchers) != nonEmpty {
+		t.Errorf("parsed %d matchers from %d non-empty lines", len(matchers), nonEmpty)
+	}
+
+	allVersions := make(map[string]bool)
+	for _, matcher := range matchers {
+		if matcher.AllVersions() {
+			allVersions[matcher.Name()] = true
+		}
+	}
+	for _, name := range []string{"@gsd-build/sdk", "get-shit-done-cc", "get-shit-done-codex"} {
+		if !allVersions[name] {
+			t.Errorf("%s was not parsed as an all-versions entry", name)
+		}
 	}
 }

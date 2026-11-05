@@ -185,6 +185,19 @@ func TestLockfileOnlyProjectIsDetected(t *testing.T) {
 	assertFindings(t, store, root, "lodash 4.17.20", "app/package-lock.json@4.17.20")
 }
 
+func TestFindAllVersions(t *testing.T) {
+	store, root := newTestStore(t, map[string]string{
+		"one/package.json":   `{"name": "lodash", "version": "4.17.20"}`,
+		"two/package.json":   `{"name": "lodash", "version": "4.17.21"}`,
+		"three/package.json": `{"name": "other", "version": "1.0.0"}`,
+	})
+
+	assertFindings(t, store, root, "lodash",
+		"one/package.json@4.17.20",
+		"two/package.json@4.17.21")
+	assertFindings(t, store, root, "not-installed")
+}
+
 func TestQueryByNameAndVersions(t *testing.T) {
 	store, root := newTestStore(t, map[string]string{
 		"one/package.json":   `{"name": "lodash", "version": "4.17.20"}`,

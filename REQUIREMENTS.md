@@ -33,10 +33,12 @@ abstractions:
     rely on external tools, allowing for better cross-platform support - even
     on Windows.
   - Compromised list parser. A parser that reads a list of compromised
-    packages from a text file. It has the ability to parse different line-
-    formats, initially package and version pairs, or packages and a list of
-    comma-separated versions. The parser returns a data structure that can be
-    used to query if a package and version is compromised. It is designed to be
+    packages from a text file. It parses whitespace-separated package and
+    version entries, including package and version pairs, packages with a list
+    of comma-separated versions, and bare package names meaning every version
+    is compromised. Invalid lines are reported with their line number instead
+    of being skipped. The parser returns a data structure that can be used to
+    query if a package and version is compromised. It is designed to be
     extensible to support additional formats in the future.
 
 ## Pseudo code

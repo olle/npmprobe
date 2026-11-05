@@ -37,8 +37,11 @@ type DefaultStore struct {
 }
 
 // Find searches for a package (from the matcher) in the index.
-// Returns the files where any version of the package is found.
+// Returns the files where any matching version of the package is found.
 func (ds *DefaultStore) Find(matcher parser.Matcher) []PackageMatch {
+	if matcher.AllVersions() {
+		return ds.index.FindAll(matcher.Name())
+	}
 	return ds.index.Find(matcher.Name(), matcher.Versions())
 }
 
